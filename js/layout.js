@@ -1,290 +1,79 @@
-// ============================================================
-// HLBP - Layout común
-// ============================================================
+<!DOCTYPE html>
+<html lang="eu">
 
-function crearLayout() {
+<head>
 
-    const app = document.getElementById("app");
+    <meta charset="UTF-8">
 
-    if (!app) {
-        return;
-    }
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    const profile = HLBPSession.profile;
+    <title>HLBP - Hasiera</title>
 
-    const nombre =
-        HLBPSession.getName();
+    <link
+        rel="stylesheet"
+        href="../css/variables.css"
+    >
 
-    const role =
-        HLBPSession.getRoleLabel();
+    <link
+        rel="stylesheet"
+        href="../css/global.css"
+    >
 
-    const inicial =
-        nombre.charAt(0).toUpperCase();
+    <link
+        rel="stylesheet"
+        href="../css/layout.css"
+    >
 
+    <link
+        rel="stylesheet"
+        href="../css/dashboard.css"
+    >
 
-    app.innerHTML = `
+</head>
 
-        <div class="app-shell">
+<body>
 
-            <!-- ================================================
-                 SIDEBAR
-            ================================================= -->
+    <div id="app">
 
-            <aside class="sidebar" id="sidebar">
+        <div class="app-loading">
 
-                <div class="sidebar-brand">
+            <div class="loading-spinner"></div>
 
-                    <div class="brand-mark">
-                        H
-                    </div>
-
-                    <div class="brand-text">
-                        <strong>HLBP</strong>
-                        <span>Sistema Profesional</span>
-                    </div>
-
-                </div>
-
-
-                <nav class="main-nav">
-
-                    <div class="nav-section-title">
-                        MENÚ
-                    </div>
-
-
-                    <a
-                        href="dashboard.html"
-                        class="nav-item active"
-                        data-page="dashboard"
-                    >
-                        <span class="nav-icon">⌂</span>
-                        <span>Hasiera</span>
-                    </a>
-
-
-                    <a
-                        href="registroa.html"
-                        class="nav-item"
-                        data-page="registroa"
-                    >
-                        <span class="nav-icon">＋</span>
-                        <span>Erregistroa</span>
-                    </a>
-
-
-                    <a
-                        href="historiala.html"
-                        class="nav-item"
-                        data-page="historiala"
-                    >
-                        <span class="nav-icon">▤</span>
-                        <span>Historiala</span>
-                    </a>
-
-
-                    <a
-                        href="centros.html"
-                        class="nav-item"
-                        data-page="centros"
-                    >
-                        <span class="nav-icon">⌂</span>
-                        <span>Zentroak</span>
-                    </a>
-
-
-                    ${
-                        HLBPSession.isAdminOrMaster()
-                        ? `
-                            <div class="nav-section-title nav-admin-title">
-                                KUDEAKETA
-                            </div>
-
-                            <a
-                                href="administrazioa.html"
-                                class="nav-item"
-                                data-page="administrazioa"
-                            >
-                                <span class="nav-icon">⚙</span>
-                                <span>Administrazioa</span>
-                            </a>
-                        `
-                        : ""
-                    }
-
-                </nav>
-
-
-                <div class="sidebar-footer">
-
-                    <div class="sidebar-user">
-
-                        <div class="user-avatar">
-                            ${inicial}
-                        </div>
-
-                        <div class="user-info">
-
-                            <strong>
-                                ${nombre}
-                            </strong>
-
-                            <span>
-                                ${role}
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    <button
-                        type="button"
-                        class="logout-button"
-                        id="logoutButton"
-                    >
-                        Itxi saioa
-                    </button>
-
-                </div>
-
-            </aside>
-
-
-            <!-- ================================================
-                 MAIN
-            ================================================= -->
-
-            <div class="main-area">
-
-                <header class="topbar">
-
-                    <button
-                        type="button"
-                        class="mobile-menu-button"
-                        id="mobileMenuButton"
-                        aria-label="Menua"
-                    >
-                        ☰
-                    </button>
-
-
-                    <div class="topbar-title">
-
-                        <span class="topbar-label">
-                            HLBP
-                        </span>
-
-                        <h1 id="pageTitle">
-                            Hasiera
-                        </h1>
-
-                    </div>
-
-
-                    <div class="topbar-user">
-
-                        <div class="topbar-user-text">
-
-                            <strong>
-                                ${nombre}
-                            </strong>
-
-                            <span>
-                                ${role}
-                            </span>
-
-                        </div>
-
-                        <div class="topbar-avatar">
-                            ${inicial}
-                        </div>
-
-                    </div>
-
-                </header>
-
-
-                <main class="page-content" id="pageContent">
-                </main>
-
-            </div>
+            <p>
+                Kargatzen...
+            </p>
 
         </div>
-    `;
+
+    </div>
 
 
-    configurarLayout();
-}
+    <!-- Supabase -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
 
+    <!-- Configuración -->
+    <script src="../js/config.js"></script>
 
-function configurarLayout() {
+    <!-- Supabase -->
+    <script src="../js/supabase.js"></script>
 
-    const logoutButton =
-        document.getElementById("logoutButton");
+    <!-- Autenticación -->
+    <script src="../js/auth.js"></script>
 
-    if (logoutButton) {
+    <!-- Sesión -->
+    <script src="../js/session.js"></script>
 
-        logoutButton.addEventListener(
-            "click",
-            async () => {
+    <!-- Layout -->
+    <script src="../js/layout.js"></script>
 
-                logoutButton.disabled = true;
+    <!-- Dashboard -->
+    <script src="../js/dashboard.js"></script>
 
-                try {
-                    await cerrarSesion();
-                } catch (error) {
+</body>
 
-                    console.error(
-                        "Error cerrando sesión:",
-                        error
-                    );
-
-                    logoutButton.disabled = false;
-                }
-
-            }
-        );
-    }
-
-
-    const mobileButton =
-        document.getElementById("mobileMenuButton");
-
-    const sidebar =
-        document.getElementById("sidebar");
-
-    if (mobileButton && sidebar) {
-
-        mobileButton.addEventListener(
-            "click",
-            () => {
-
-                sidebar.classList.toggle(
-                    "sidebar-open"
-                );
-
-            }
-        );
-    }
-
-
-    document
-        .querySelectorAll(".nav-item")
-        .forEach(item => {
-
-            item.addEventListener(
-                "click",
-                () => {
-
-                    if (sidebar) {
-                        sidebar.classList.remove(
-                            "sidebar-open"
-                        );
-                    }
-
-                }
-            );
-
-        });
-}
+</html>
