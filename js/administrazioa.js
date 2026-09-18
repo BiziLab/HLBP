@@ -1,344 +1,962 @@
-/* ============================================================
-   HLBP - ADMINISTRAZIOA
-   ============================================================ */
+// ============================================================
+// HLBP - ADMINISTRAZIOA
+// ============================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
-
-    const ok = await window.HLBPSession.init();
-
-    if (!ok) {
-        window.location.replace("../index.html");
-        return;
-    }
-
-    if (!window.HLBPSession.isAdminOrMaster()) {
-        window.location.replace("dashboard.html");
-        return;
-    }
-
-    window.HLBPLayout.render();
-
     await iniciarAdministrazioa();
 });
 
 
-let aholkulariak = [];
-let registrosGlobales = [];
-let centrosGlobales = [];
-let personaActual = null;
-let registrosPersona = [];
-
-
-/* ============================================================
-   INICIO
-   ============================================================ */
+// ============================================================
+// INICIO
+// ============================================================
 
 async function iniciarAdministrazioa() {
 
-    const params = new URLSearchParams(window.location.search);
-    const personaId = params.get("persona");
+    try {
 
-    if (personaId) {
-        await renderPersona(personaId);
-    } else {
+        console.log("HLBP Administrazioa: iniciando...");
+
+        const sesionOk = await window.HLBPSession.init();
+
+        if (!sesionOk) {
+            console.error("Administrazioa: no hay sesión.");
+            window.location.replace("../index.html");
+            return;
+        }
+
+        console.log(
+            "HLBP Administrazioa: usuario autenticado:",
+            window.HLBPSession.user?.email
+        );
+
+        // Solo ADMIN y MASTER
+        if (!window.HLBPSession.isAdminOrMaster()) {
+
+            console.error(
+                "Administrazioa: usuario sin permisos."
+            );
+
+            window.location.replace("dashboard.html");
+            return;
+        }
+
+        // Cargar layout principal
+        window.HLBPLayout.render();
+
+        // Obtener zona de contenido
+        const pageContent =
+            document.getElementById("pageContent");
+
+        if (!pageContent) {
+            throw new Error(
+                "No se encontró #pageContent después de cargar el layout."
+            );
+        }
+
+        console.log(
+            "Administrazioa: #pageContent encontrado."
+        );
+
         await renderAdministrazioa();
+
+    } catch (error) {
+
+        console.error(
+            "Administrazioa: error inicializando:",
+            error
+        );
+
+        mostrarErrorAdministrazioa(error);
     }
 }
 
 
-/* ============================================================
-   VISTA GENERAL
-   ============================================================ */
+// ============================================================
+// RENDER PRINCIPAL
+// ============================================================
 
 async function renderAdministrazioa() {
 
-    document.title = "HLBP - Administrazioa";
+    const pageContent =
+        document.getElementById("pageContent");
 
-    const app = document.getElementById("app");
+    if (!pageContent) {
+        throw new Error("No existe #pageContent.");
+    }
 
-    app.innerHTML = `
-        ${window.HLBPLayout.getShell()}
+    pageContent.innerHTML = `
+        <div class="admin-page">
 
-        <main class="content-area">
+            <div class="admin-page-header">
 
-            <div class="admin-page">
-
-                <div class="admin-page-header">
-
-                    <div>
-                        <h1>Aholkulariak Kudeaketa</h1>
-                        <p>
-                            Aholkulariak, zentroak eta erregistro guztiak kudeatu.
-                        </p>
+                <div>
+                    <div class="admin-breadcrumb">
+                        HLBP / Administrazioa
                     </div>
 
-                    <div class="admin-header-actions">
+                    <h1>Aholkulariak Kudeaketa</h1>
+
+                    <p>
+                        Aholkulariak, zentroak eta erregistroak
+                        kudeatzeko administrazio panela.
+                    </p>
+                </div>
+
+                <div class="admin-header-actions">
+
+                    <button
+                        type="button"
+                        class="admin-btn admin-btn-secondary"
+                        id="btnExcelGlobal"
+                    >
+                        📥 Excelera deskargatu
+                    </button>
+
+                    <button
+                        type="button"
+                        class="admin-btn admin-btn-primary"
+                        id="btnNuevoAholkularia"
+                    >
+                        ＋ Gehitu Aholkularia
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div id="adminContent">
+
+                <div class="admin-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Kargatzen...</p>
+                </div>
+
+            </div>
+
+        </div>
+    `;
+
+    document
+        .getElementById("btnNuevoAholkularia")
+        ?.addEventListener(
+            "click",
+            mostrarFormularioNuevoAholkularia
+        );
+
+    document
+        .getElementById("btnExcelGlobal")
+        ?.addEventListener(
+            "click",
+            descargarExcelGlobal
+        );
+
+    await cargarListadoAholkulariak();
+}
+
+
+// ============================================================
+// LISTADO DE AHOLKULARIAK
+// ============================================================
+
+async function cargarListadoAholkulariak() {
+
+    const container =
+        document.getElementById("adminContent");
+
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="admin-loading">
+            <div class="loading-spinner"></div>
+            <p>Aholkulariak kargatzen...</p>
+        </div>
+    `;
+
+    try {
+
+        const { data: perfiles, error } =
+            await window.hlbpSupabase
+                .from("profiles")
+                .select(`
+                    id,
+                    email,
+                    nombre,
+                    apellidos,
+                    codigo,
+                    role,
+                    berritzegune,
+                    espezialitatea,
+                    activo
+                `)
+                .eq("role", "AHL")
+                .order("apellidos", {
+                    ascending: true
+                })
+                .order("nombre", {
+                    ascending: true
+                });
+
+        if (error) {
+            throw error;
+        }
+
+        const personas = perfiles || [];
+
+        // ----------------------------------------------------
+        // Registros globales
+        // ----------------------------------------------------
+
+        const {
+            data: registros,
+            error: registrosError
+        } = await window.hlbpSupabase
+            .from("registros")
+            .select(`
+                id,
+                usuario_id
+            `);
+
+        if (registrosError) {
+            throw registrosError;
+        }
+
+        // ----------------------------------------------------
+        // Centros asignados
+        // ----------------------------------------------------
+
+        const {
+            data: relacionesCentros,
+            error: centrosError
+        } = await window.hlbpSupabase
+            .from("aholkulari_centros")
+            .select(`
+                id,
+                aholkulari_id,
+                centro_id
+            `);
+
+        if (centrosError) {
+            throw centrosError;
+        }
+
+        // ----------------------------------------------------
+        // Centros
+        // ----------------------------------------------------
+
+        const {
+            data: centros,
+            error: centrosDataError
+        } = await window.hlbpSupabase
+            .from("centros")
+            .select(`
+                id,
+                codigo,
+                nombre,
+                municipio,
+                zona,
+                activo
+            `)
+            .order("codigo", {
+                ascending: true
+            });
+
+        if (centrosDataError) {
+            throw centrosDataError;
+        }
+
+        const centrosMap = new Map();
+
+        (centros || []).forEach(centro => {
+            centrosMap.set(
+                String(centro.id),
+                centro
+            );
+        });
+
+        // ----------------------------------------------------
+        // Construir datos
+        // ----------------------------------------------------
+
+        const datos = personas.map(persona => {
+
+            const personaId =
+                String(persona.id);
+
+            const registrosPersona =
+                (registros || []).filter(
+                    registro =>
+                        String(registro.usuario_id) ===
+                        personaId
+                );
+
+            const relacionesPersona =
+                (relacionesCentros || []).filter(
+                    relacion =>
+                        String(relacion.aholkulari_id) ===
+                        personaId
+                );
+
+            const centrosPersona =
+                relacionesPersona
+                    .map(relacion =>
+                        centrosMap.get(
+                            String(relacion.centro_id)
+                        )
+                    )
+                    .filter(Boolean);
+
+            return {
+                ...persona,
+                registrosCount:
+                    registrosPersona.length,
+                centrosCount:
+                    centrosPersona.length,
+                centros:
+                    centrosPersona
+            };
+        });
+
+        renderListado(datos);
+
+    } catch (error) {
+
+        console.error(
+            "Error cargando Aholkulariak:",
+            error
+        );
+
+        container.innerHTML = `
+            <div class="admin-panel">
+                <div class="admin-empty-state">
+                    <div class="admin-empty-icon">⚠️</div>
+
+                    <h3>Ezin izan dira Aholkulariak kargatu</h3>
+
+                    <p>
+                        ${escapeHtml(
+                            obtenerMensajeError(error)
+                        )}
+                    </p>
+
+                    <button
+                        type="button"
+                        class="admin-btn admin-btn-primary"
+                        onclick="cargarListadoAholkulariak()"
+                    >
+                        Berriro saiatu
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+
+// ============================================================
+// RENDER LISTADO
+// ============================================================
+
+function renderListado(personas) {
+
+    const container =
+        document.getElementById("adminContent");
+
+    if (!container) return;
+
+    const totalPersonas =
+        personas.length;
+
+    const totalRegistros =
+        personas.reduce(
+            (total, persona) =>
+                total + persona.registrosCount,
+            0
+        );
+
+    const totalCentros =
+        personas.reduce(
+            (total, persona) =>
+                total + persona.centrosCount,
+            0
+        );
+
+    container.innerHTML = `
+
+        <!-- RESUMEN -->
+
+        <div class="admin-summary">
+
+            <div class="admin-stat-card">
+
+                <div class="admin-stat-icon">
+                    👥
+                </div>
+
+                <div>
+                    <span class="admin-stat-label">
+                        Aholkulariak
+                    </span>
+
+                    <strong class="admin-stat-value">
+                        ${totalPersonas}
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="admin-stat-card">
+
+                <div class="admin-stat-icon">
+                    📋
+                </div>
+
+                <div>
+                    <span class="admin-stat-label">
+                        Erregistroak
+                    </span>
+
+                    <strong class="admin-stat-value">
+                        ${totalRegistros}
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="admin-stat-card">
+
+                <div class="admin-stat-icon">
+                    🏫
+                </div>
+
+                <div>
+                    <span class="admin-stat-label">
+                        Zentroen esleipenak
+                    </span>
+
+                    <strong class="admin-stat-value">
+                        ${totalCentros}
+                    </strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- FILTROS -->
+
+        <div class="admin-panel">
+
+            <div class="admin-panel-header">
+
+                <div>
+                    <h2>Aholkulariak</h2>
+                    <p>
+                        Sistemako Aholkulariak kudeatu.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="admin-filters">
+
+                <div class="admin-filter-group">
+
+                    <label for="adminSearch">
+                        Bilatu
+                    </label>
+
+                    <input
+                        type="search"
+                        id="adminSearch"
+                        class="admin-input"
+                        placeholder="Izena, kodigoa edo emaila..."
+                    >
+
+                </div>
+
+
+                <div class="admin-filter-group">
+
+                    <label for="adminEspecialidad">
+                        Espezialitatea
+                    </label>
+
+                    <select
+                        id="adminEspecialidad"
+                        class="admin-input"
+                    >
+
+                        <option value="">
+                            Guztiak
+                        </option>
+
+                        <option value="Inklusioa">
+                            Inklusioa
+                        </option>
+
+                        <option value="Bizikidetza">
+                            Bizikidetza
+                        </option>
+
+                        <option value="Posbentzioa">
+                            Posbentzioa
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="admin-filter-group">
+
+                    <label for="adminBerritzegune">
+                        Berritzegunea
+                    </label>
+
+                    <select
+                        id="adminBerritzegune"
+                        class="admin-input"
+                    >
+
+                        <option value="">
+                            Guztiak
+                        </option>
+
+                        ${obtenerBerritzeguneOptions(personas)}
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="adminTableContainer"
+                class="admin-table-container"
+            ></div>
+
+        </div>
+    `;
+
+    const search =
+        document.getElementById("adminSearch");
+
+    const especialidad =
+        document.getElementById("adminEspecialidad");
+
+    const berritzegune =
+        document.getElementById("adminBerritzegune");
+
+    function aplicarFiltros() {
+
+        const texto =
+            search?.value
+                .trim()
+                .toLowerCase() || "";
+
+        const especialidadValue =
+            especialidad?.value || "";
+
+        const berritzeguneValue =
+            berritzegune?.value || "";
+
+        const filtradas =
+            personas.filter(persona => {
+
+                const nombre =
+                    `${persona.nombre || ""} ${persona.apellidos || ""}`
+                        .trim()
+                        .toLowerCase();
+
+                const codigo =
+                    String(
+                        persona.codigo || ""
+                    ).toLowerCase();
+
+                const email =
+                    String(
+                        persona.email || ""
+                    ).toLowerCase();
+
+                const coincideTexto =
+                    !texto ||
+                    nombre.includes(texto) ||
+                    codigo.includes(texto) ||
+                    email.includes(texto);
+
+                const coincideEspecialidad =
+                    !especialidadValue ||
+                    persona.espezialitatea ===
+                        especialidadValue;
+
+                const coincideBerritzegune =
+                    !berritzeguneValue ||
+                    persona.berritzegune ===
+                        berritzeguneValue;
+
+                return (
+                    coincideTexto &&
+                    coincideEspecialidad &&
+                    coincideBerritzegune
+                );
+            });
+
+        renderTablaAholkulariak(
+            filtradas
+        );
+    }
+
+    search?.addEventListener(
+        "input",
+        aplicarFiltros
+    );
+
+    especialidad?.addEventListener(
+        "change",
+        aplicarFiltros
+    );
+
+    berritzegune?.addEventListener(
+        "change",
+        aplicarFiltros
+    );
+
+    aplicarFiltros();
+}
+
+
+// ============================================================
+// TABLA AHOLKULARIAK
+// ============================================================
+
+function renderTablaAholkulariak(personas) {
+
+    const container =
+        document.getElementById(
+            "adminTableContainer"
+        );
+
+    if (!container) return;
+
+    if (!personas.length) {
+
+        container.innerHTML = `
+            <div class="admin-empty-state">
+                <div class="admin-empty-icon">
+                    👥
+                </div>
+
+                <h3>Ez dago emaitzarik</h3>
+
+                <p>
+                    Ez da Aholkularirik aurkitu
+                    hautatutako irizpideekin.
+                </p>
+            </div>
+        `;
+
+        return;
+    }
+
+    const rows =
+        personas.map(persona => {
+
+            const nombre =
+                `${persona.nombre || ""} ${persona.apellidos || ""}`
+                    .trim() ||
+                persona.email ||
+                "—";
+
+            const centros =
+                persona.centros || [];
+
+            const centrosTexto =
+                centros.length
+                    ? centros
+                        .map(
+                            centro =>
+                                centro.codigo ||
+                                centro.nombre ||
+                                ""
+                        )
+                        .filter(Boolean)
+                        .join(", ")
+                    : "—";
+
+            return `
+                <tr>
+
+                    <td>
+                        <strong>
+                            ${escapeHtml(
+                                persona.codigo || "—"
+                            )}
+                        </strong>
+                    </td>
+
+
+                    <td>
+
+                        <div class="admin-person-name">
+                            ${escapeHtml(nombre)}
+                        </div>
+
+                        <div class="admin-person-email">
+                            ${escapeHtml(
+                                persona.email || ""
+                            )}
+                        </div>
+
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            persona.berritzegune || "—"
+                        )}
+                    </td>
+
+
+                    <td>
+
+                        ${
+                            persona.espezialitatea
+                                ? `
+                                    <span class="admin-badge">
+                                        ${escapeHtml(
+                                            persona.espezialitatea
+                                        )}
+                                    </span>
+                                  `
+                                : "—"
+                        }
+
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            centrosTexto
+                        )}
+                    </td>
+
+
+                    <td>
+                        <strong>
+                            ${persona.registrosCount}
+                        </strong>
+                    </td>
+
+
+                    <td>
 
                         <button
-                            class="admin-btn admin-btn-success"
-                            id="btnExcelGlobal">
-                            📥 DESCARGAR A EXCEL
+                            type="button"
+                            class="admin-btn admin-btn-small admin-btn-secondary"
+                            data-persona-id="${escapeHtml(
+                                persona.id
+                            )}"
+                            onclick="abrirPersonaDesdeBoton(this)"
+                        >
+                            IKUSI
                         </button>
 
-                        <button
-                            class="admin-btn admin-btn-primary"
-                            id="btnNuevoAholkularia">
-                            ➕ GEHITU AHOLKULARIA
-                        </button>
+                    </td>
 
+                </tr>
+            `;
+        }).join("");
+
+
+    container.innerHTML = `
+
+        <div class="admin-table-wrapper">
+
+            <table class="admin-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Kodigoa</th>
+                        <th>Izena</th>
+                        <th>Kokapena</th>
+                        <th>Espezialitatea</th>
+                        <th>Zentroak</th>
+                        <th>Erregistroak</th>
+                        <th>Ekintza</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+                    ${rows}
+                </tbody>
+
+            </table>
+
+        </div>
+    `;
+}
+
+
+// ============================================================
+// ABRIR PERSONA
+// ============================================================
+
+function abrirPersonaDesdeBoton(button) {
+
+    const id =
+        button.dataset.personaId;
+
+    if (!id) return;
+
+    window.location.href =
+        `administrazioa.html?persona=${encodeURIComponent(id)}`;
+}
+
+
+// ============================================================
+// FORMULARIO NUEVO AHOLKULARIA
+// ============================================================
+
+function mostrarFormularioNuevoAholkularia() {
+
+    const pageContent =
+        document.getElementById("pageContent");
+
+    if (!pageContent) return;
+
+    pageContent.innerHTML = `
+
+        <div class="admin-page">
+
+            <div class="admin-page-header">
+
+                <div>
+
+                    <div class="admin-breadcrumb">
+                        HLBP / Administrazioa / Aholkularia berria
+                    </div>
+
+                    <h1>Aholkularia gehitu</h1>
+
+                    <p>
+                        Sortu Aholkulariaren erabiltzaile-kontua
+                        eta lotu dagokion informazioa.
+                    </p>
+
+                </div>
+
+                <div class="admin-header-actions">
+
+                    <button
+                        type="button"
+                        class="admin-btn admin-btn-secondary"
+                        id="btnVolverListado"
+                    >
+                        ← Itzuli
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div class="admin-panel">
+
+                <div class="admin-panel-header">
+
+                    <div>
+                        <h2>Aholkulariaren datuak</h2>
+
+                        <p>
+                            Derrigorrezko eremuak * batekin
+                            markatuta daude.
+                        </p>
                     </div>
 
                 </div>
 
 
-                <section class="admin-summary">
+                <form
+                    id="nuevoAholkulariaForm"
+                    class="admin-form"
+                >
 
-                    <div class="admin-summary-card">
-                        <div class="admin-summary-label">
-                            Aholkulariak
-                        </div>
+                    <div class="admin-form-grid">
 
-                        <div
-                            class="admin-summary-value"
-                            id="summaryAholkulariak">
-                            —
-                        </div>
-                    </div>
 
-                    <div class="admin-summary-card">
-                        <div class="admin-summary-label">
-                            Erregistroak
-                        </div>
+                        <div class="admin-form-group">
 
-                        <div
-                            class="admin-summary-value"
-                            id="summaryRegistros">
-                            —
-                        </div>
-                    </div>
-
-                    <div class="admin-summary-card">
-                        <div class="admin-summary-label">
-                            Zentroak
-                        </div>
-
-                        <div
-                            class="admin-summary-value"
-                            id="summaryCentros">
-                            —
-                        </div>
-                    </div>
-
-                </section>
-
-
-                <!-- CREAR AHOLKULARIA -->
-
-                <section
-                    class="admin-panel admin-create-panel"
-                    id="createAholkulariaPanel">
-
-                    <div class="admin-panel-header">
-
-                        <div>
-                            <h2>Aholkularia berria</h2>
-
-                            <p>
-                                Sortu Aholkulariaren erabiltzaile-kontua eta profila.
-                            </p>
-                        </div>
-
-                    </div>
-
-                    <div class="admin-panel-body">
-
-                        <div
-                            id="createAlert"
-                            class="admin-alert">
-                        </div>
-
-
-                        <form id="createAholkulariaForm">
-
-                            <div class="admin-form-grid">
-
-                                <div class="admin-form-group">
-
-                                    <label for="nuevoNombre">
-                                        Izena *
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        id="nuevoNombre"
-                                        required
-                                        autocomplete="off">
-
-                                </div>
-
-
-                                <div class="admin-form-group">
-
-                                    <label for="nuevoCodigo">
-                                        Kodigoa *
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        id="nuevoCodigo"
-                                        required
-                                        autocomplete="off">
-
-                                </div>
-
-
-                                <div class="admin-form-group">
-
-                                    <label for="nuevoBerritzegune">
-                                        Berritzegune *
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        id="nuevoBerritzegune"
-                                        required
-                                        autocomplete="off">
-
-                                </div>
-
-
-                                <div class="admin-form-group">
-
-                                    <label for="nuevoEspecialidad">
-                                        Espezialitatea *
-                                    </label>
-
-                                    <select
-                                        id="nuevoEspecialidad"
-                                        required>
-
-                                        <option value="">
-                                            Aukeratu...
-                                        </option>
-
-                                        <option value="Inklusioa">
-                                            Inklusioa
-                                        </option>
-
-                                        <option value="Bizikidetza">
-                                            Bizikidetza
-                                        </option>
-
-                                        <option value="Posbentzioa">
-                                            Posbentzioa
-                                        </option>
-
-                                    </select>
-
-                                </div>
-
-
-                                <div class="admin-form-group full">
-
-                                    <label for="nuevoEmail">
-                                        Emaila *
-                                    </label>
-
-                                    <input
-                                        type="email"
-                                        id="nuevoEmail"
-                                        required
-                                        autocomplete="email"
-                                        placeholder="adibidez@bizilab.eus">
-
-                                    <span class="admin-form-help">
-                                        Helbide honetara gonbidapena bidaliko da.
-                                    </span>
-
-                                </div>
-
-
-                                <div class="admin-form-group full">
-
-                                    <label for="nuevoCentros">
-                                        Zentroak
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        id="nuevoCentros"
-                                        placeholder="1234, 5678, 9012"
-                                        autocomplete="off">
-
-                                    <span class="admin-form-help">
-                                        Zentroen kodeak koma bidez banatu.
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-
-                            <div class="admin-form-actions">
-
-                                <button
-                                    type="button"
-                                    class="admin-btn admin-btn-secondary"
-                                    id="btnCancelarNuevo">
-                                    Utzi
-                                </button>
-
-                                <button
-                                    type="submit"
-                                    class="admin-btn admin-btn-primary"
-                                    id="btnCrearAholkularia">
-                                    ➕ Gehitu Aholkularia
-                                </button>
-
-                            </div>
-
-                        </form>
-
-                    </div>
-
-                </section>
-
-
-                <!-- LISTADO -->
-
-                <section class="admin-panel">
-
-                    <div class="admin-panel-header">
-
-                        <div>
-                            <h2>Aholkulariak</h2>
-
-                            <p>
-                                Sistemako Aholkulari guztiak.
-                            </p>
-                        </div>
-
-                    </div>
-
-
-                    <div class="admin-filters">
-
-                        <div class="admin-filter">
+                            <label for="nuevoNombre">
+                                Izena *
+                            </label>
 
                             <input
-                                type="search"
-                                id="adminSearch"
-                                placeholder="Bilatu izena, kodigoa edo emaila...">
+                                type="text"
+                                id="nuevoNombre"
+                                class="admin-input"
+                                required
+                                autocomplete="off"
+                            >
 
                         </div>
 
 
-                        <div class="admin-filter">
+                        <div class="admin-form-group">
 
-                            <select id="adminEspecialidadFilter">
+                            <label for="nuevoCodigo">
+                                Kodigoa *
+                            </label>
+
+                            <input
+                                type="text"
+                                id="nuevoCodigo"
+                                class="admin-input"
+                                required
+                                autocomplete="off"
+                            >
+
+                        </div>
+
+
+                        <div class="admin-form-group">
+
+                            <label for="nuevoBerritzegune">
+                                Berritzegune *
+                            </label>
+
+                            <input
+                                type="text"
+                                id="nuevoBerritzegune"
+                                class="admin-input"
+                                required
+                                autocomplete="off"
+                            >
+
+                        </div>
+
+
+                        <div class="admin-form-group">
+
+                            <label for="nuevoEspecialidad">
+                                Espezialitatea *
+                            </label>
+
+                            <select
+                                id="nuevoEspecialidad"
+                                class="admin-input"
+                                required
+                            >
 
                                 <option value="">
-                                    Espezialitate guztiak
+                                    Aukeratu...
                                 </option>
 
                                 <option value="Inklusioa">
@@ -358,657 +976,161 @@ async function renderAdministrazioa() {
                         </div>
 
 
-                        <div class="admin-filter">
+                        <div class="admin-form-group admin-form-full">
 
-                            <select id="adminBerritzeguneFilter">
+                            <label for="nuevoEmail">
+                                Emaila *
+                            </label>
 
-                                <option value="">
-                                    Berritzegune guztiak
-                                </option>
+                            <input
+                                type="email"
+                                id="nuevoEmail"
+                                class="admin-input"
+                                required
+                                autocomplete="off"
+                                placeholder="adibidea@bizilab.eus"
+                            >
 
-                            </select>
+                            <small>
+                                Helbide honetan jasoko du
+                                Aholkulariak kontua aktibatzeko
+                                gonbidapena.
+                            </small>
+
+                        </div>
+
+
+                        <div class="admin-form-group admin-form-full">
+
+                            <label for="nuevoCentros">
+                                Zentroak
+                            </label>
+
+                            <input
+                                type="text"
+                                id="nuevoCentros"
+                                class="admin-input"
+                                placeholder="1001, 1002, 1003"
+                                autocomplete="off"
+                            >
+
+                            <small>
+                                Zentroen kodigoak koma bidez
+                                bereizita.
+                            </small>
 
                         </div>
 
                     </div>
 
 
-                    <div class="admin-table-wrapper">
+                    <div
+                        id="nuevoAholkulariaMessage"
+                        class="admin-form-message"
+                        aria-live="polite"
+                    ></div>
 
-                        <table class="admin-table">
 
-                            <thead>
-
-                                <tr>
-                                    <th>Kodigoa</th>
-                                    <th>Izena</th>
-                                    <th>Kokapena</th>
-                                    <th>Espezialitatea</th>
-                                    <th>Zentroak</th>
-                                    <th>Erregistroak</th>
-                                    <th>Ekintza</th>
-                                </tr>
-
-                            </thead>
-
-                            <tbody id="adminAholkulariakBody">
-
-                                <tr>
-                                    <td colspan="7">
-                                        <div class="admin-loading">
-                                            Kargatzen...
-                                        </div>
-                                    </td>
-                                </tr>
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-                </section>
-
-            </div>
-
-        </main>
-    `;
-
-    configurarEventosAdministrazioa();
-
-    await cargarDatosAdministrazioa();
-
-}
-
-
-/* ============================================================
-   EVENTOS
-   ============================================================ */
-
-function configurarEventosAdministrazioa() {
-
-    document
-        .getElementById("btnNuevoAholkularia")
-        ?.addEventListener("click", () => {
-
-            const panel =
-                document.getElementById("createAholkulariaPanel");
-
-            panel.classList.add("is-open");
-
-            panel.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
-
-        });
-
-
-    document
-        .getElementById("btnCancelarNuevo")
-        ?.addEventListener("click", cerrarFormularioNuevo);
-
-
-    document
-        .getElementById("createAholkulariaForm")
-        ?.addEventListener(
-            "submit",
-            crearAholkularia
-        );
-
-
-    document
-        .getElementById("btnExcelGlobal")
-        ?.addEventListener(
-            "click",
-            descargarExcelGlobal
-        );
-
-
-    document
-        .getElementById("adminSearch")
-        ?.addEventListener(
-            "input",
-            aplicarFiltrosAdmin
-        );
-
-
-    document
-        .getElementById("adminEspecialidadFilter")
-        ?.addEventListener(
-            "change",
-            aplicarFiltrosAdmin
-        );
-
-
-    document
-        .getElementById("adminBerritzeguneFilter")
-        ?.addEventListener(
-            "change",
-            aplicarFiltrosAdmin
-        );
-
-}
-
-
-/* ============================================================
-   CARGAR DATOS
-   ============================================================ */
-
-async function cargarDatosAdministrazioa() {
-
-    try {
-
-        const [
-            perfilesResponse,
-            registrosResponse,
-            centrosResponse,
-            relacionesResponse
-        ] = await Promise.all([
-
-            window.hlbpSupabase
-                .from("profiles")
-                .select(`
-                    id,
-                    email,
-                    nombre,
-                    apellidos,
-                    codigo,
-                    role,
-                    berritzegune,
-                    espezialitatea,
-                    activo
-                `)
-                .eq("role", "AHL")
-                .order("apellidos", {
-                    ascending: true
-                }),
-
-            window.hlbpSupabase
-                .from("registros")
-                .select(`
-                    id,
-                    usuario_id,
-                    centro_id,
-                    tarea,
-                    tipo,
-                    subtipo,
-                    alumno_id,
-                    zehaztu,
-                    fecha,
-                    fecha_fin,
-                    estado,
-                    observaciones,
-                    created_at,
-                    updated_at
-                `)
-                .order("fecha", {
-                    ascending: false
-                }),
-
-            window.hlbpSupabase
-                .from("centros")
-                .select(`
-                    id,
-                    codigo,
-                    nombre,
-                    municipio,
-                    zona,
-                    activo
-                `)
-                .order("codigo", {
-                    ascending: true
-                }),
-
-            window.hlbpSupabase
-                .from("aholkulari_centros")
-                .select(`
-                    aholkulari_id,
-                    centro_id
-                `)
-
-        ]);
-
-
-        if (perfilesResponse.error) {
-            throw perfilesResponse.error;
-        }
-
-        if (registrosResponse.error) {
-            throw registrosResponse.error;
-        }
-
-        if (centrosResponse.error) {
-            throw centrosResponse.error;
-        }
-
-        if (relacionesResponse.error) {
-            throw relacionesResponse.error;
-        }
-
-
-        aholkulariak = perfilesResponse.data || [];
-        registrosGlobales = registrosResponse.data || [];
-        centrosGlobales = centrosResponse.data || [];
-
-        const relaciones =
-            relacionesResponse.data || [];
-
-
-        const registrosPorUsuario = {};
-
-        registrosGlobales.forEach(registro => {
-
-            if (!registrosPorUsuario[registro.usuario_id]) {
-                registrosPorUsuario[registro.usuario_id] = 0;
-            }
-
-            registrosPorUsuario[registro.usuario_id]++;
-
-        });
-
-
-        const centrosPorUsuario = {};
-
-        relaciones.forEach(relacion => {
-
-            if (!centrosPorUsuario[relacion.aholkulari_id]) {
-                centrosPorUsuario[relacion.aholkulari_id] = 0;
-            }
-
-            centrosPorUsuario[relacion.aholkulari_id]++;
-
-        });
-
-
-        aholkulariak = aholkulariak.map(persona => ({
-
-            ...persona,
-
-            _registroCount:
-                registrosPorUsuario[persona.id] || 0,
-
-            _centroCount:
-                centrosPorUsuario[persona.id] || 0
-
-        }));
-
-
-        document.getElementById(
-            "summaryAholkulariak"
-        ).textContent = aholkulariak.length;
-
-
-        document.getElementById(
-            "summaryRegistros"
-        ).textContent = registrosGlobales.length;
-
-
-        document.getElementById(
-            "summaryCentros"
-        ).textContent = centrosGlobales.length;
-
-
-        cargarFiltroBerritzegune();
-
-
-        renderTablaAholkulariak(
-            aholkulariak
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Error cargando administración:",
-            error
-        );
-
-        const body =
-            document.getElementById(
-                "adminAholkulariakBody"
-            );
-
-        if (body) {
-
-            body.innerHTML = `
-                <tr>
-                    <td colspan="7">
-                        <div class="admin-empty">
-                            <strong>Ezin izan dira datuak kargatu.</strong>
-                            ${escapeHtml(error.message || "")}
-                        </div>
-                    </td>
-                </tr>
-            `;
-
-        }
-
-    }
-
-}
-
-
-/* ============================================================
-   FILTRO BERRITZEGUNE
-   ============================================================ */
-
-function cargarFiltroBerritzegune() {
-
-    const select =
-        document.getElementById(
-            "adminBerritzeguneFilter"
-        );
-
-    if (!select) return;
-
-
-    const valores = [
-        ...new Set(
-            aholkulariak
-                .map(item => item.berritzegune)
-                .filter(Boolean)
-        )
-    ].sort();
-
-
-    select.innerHTML = `
-        <option value="">
-            Berritzegune guztiak
-        </option>
-    `;
-
-
-    valores.forEach(valor => {
-
-        const option =
-            document.createElement("option");
-
-        option.value = valor;
-        option.textContent = valor;
-
-        select.appendChild(option);
-
-    });
-
-}
-
-
-/* ============================================================
-   RENDER TABLA
-   ============================================================ */
-
-function renderTablaAholkulariak(lista) {
-
-    const body =
-        document.getElementById(
-            "adminAholkulariakBody"
-        );
-
-    if (!body) return;
-
-
-    if (!lista.length) {
-
-        body.innerHTML = `
-            <tr>
-                <td colspan="7">
-
-                    <div class="admin-empty">
-
-                        <strong>
-                            Ez da Aholkularirik aurkitu.
-                        </strong>
-
-                        Saiatu beste bilaketa-iragazki batekin.
-
-                    </div>
-
-                </td>
-            </tr>
-        `;
-
-        return;
-
-    }
-
-
-    body.innerHTML = lista.map(persona => {
-
-        const nombre =
-            `${persona.nombre || ""} ${persona.apellidos || ""}`
-                .trim();
-
-
-        return `
-            <tr>
-
-                <td>
-                    <span class="admin-code">
-                        ${escapeHtml(persona.codigo || "—")}
-                    </span>
-                </td>
-
-
-                <td>
-
-                    <span class="admin-person-name">
-                        ${escapeHtml(nombre || "—")}
-                    </span>
-
-                    <span class="admin-person-email">
-                        ${escapeHtml(persona.email || "")}
-                    </span>
-
-                </td>
-
-
-                <td>
-                    ${escapeHtml(persona.berritzegune || "—")}
-                </td>
-
-
-                <td>
-
-                    ${
-                        persona.espezialitatea
-                            ? `
-                                <span class="admin-specialty">
-                                    ${escapeHtml(persona.espezialitatea)}
-                                </span>
-                              `
-                            : "—"
-                    }
-
-                </td>
-
-
-                <td>
-                    <span class="admin-center-count">
-                        ${persona._centroCount}
-                    </span>
-                </td>
-
-
-                <td>
-                    <span class="admin-record-count">
-                        ${persona._registroCount}
-                    </span>
-                </td>
-
-
-                <td>
-
-                    <div class="admin-actions">
+                    <div class="admin-form-actions">
 
                         <button
-                            class="admin-btn admin-btn-primary admin-btn-small"
-                            onclick="abrirPersona('${persona.id}')">
-                            IKUSI
+                            type="button"
+                            class="admin-btn admin-btn-secondary"
+                            id="btnCancelarNuevo"
+                        >
+                            Utzi
+                        </button>
+
+                        <button
+                            type="submit"
+                            class="admin-btn admin-btn-primary"
+                            id="btnCrearAholkularia"
+                        >
+                            ➕ Gehitu Aholkularia
                         </button>
 
                     </div>
 
-                </td>
+                </form>
 
-            </tr>
-        `;
+            </div>
 
-    }).join("");
-
-}
+        </div>
+    `;
 
 
-/* ============================================================
-   FILTROS
-   ============================================================ */
-
-function aplicarFiltrosAdmin() {
-
-    const search =
-        (
-            document.getElementById(
-                "adminSearch"
-            )?.value || ""
-        )
-        .trim()
-        .toLowerCase();
-
-
-    const especialidad =
-        document.getElementById(
-            "adminEspecialidadFilter"
-        )?.value || "";
-
-
-    const berritzegune =
-        document.getElementById(
-            "adminBerritzeguneFilter"
-        )?.value || "";
-
-
-    const filtrados =
-        aholkulariak.filter(persona => {
-
-            const texto = [
-
-                persona.nombre,
-                persona.apellidos,
-                persona.email,
-                persona.codigo,
-                persona.berritzegune,
-                persona.espezialitatea
-
-            ]
-                .filter(Boolean)
-                .join(" ")
-                .toLowerCase();
-
-
-            if (
-                search &&
-                !texto.includes(search)
-            ) {
-                return false;
-            }
-
-
-            if (
-                especialidad &&
-                persona.espezialitatea !== especialidad
-            ) {
-                return false;
-            }
-
-
-            if (
-                berritzegune &&
-                persona.berritzegune !== berritzegune
-            ) {
-                return false;
-            }
-
-
-            return true;
-
-        });
-
-
-    renderTablaAholkulariak(filtrados);
-
-}
-
-
-/* ============================================================
-   FORMULARIO
-   ============================================================ */
-
-function cerrarFormularioNuevo() {
-
-    const panel =
-        document.getElementById(
-            "createAholkulariaPanel"
-        );
-
-    const form =
-        document.getElementById(
-            "createAholkulariaForm"
+    document
+        .getElementById("btnVolverListado")
+        ?.addEventListener(
+            "click",
+            cargarListadoAholkulariak
         );
 
 
-    panel?.classList.remove("is-open");
+    document
+        .getElementById("btnCancelarNuevo")
+        ?.addEventListener(
+            "click",
+            cargarListadoAholkulariak
+        );
 
-    form?.reset();
 
-    ocultarCreateAlert();
-
+    document
+        .getElementById("nuevoAholkulariaForm")
+        ?.addEventListener(
+            "submit",
+            crearAholkularia
+        );
 }
 
+
+// ============================================================
+// CREAR AHOLKULARIA
+// ============================================================
 
 async function crearAholkularia(event) {
 
     event.preventDefault();
-
 
     const button =
         document.getElementById(
             "btnCrearAholkularia"
         );
 
+    const message =
+        document.getElementById(
+            "nuevoAholkulariaMessage"
+        );
 
     const nombre =
         document.getElementById(
             "nuevoNombre"
-        ).value.trim();
-
+        )?.value.trim();
 
     const codigo =
         document.getElementById(
             "nuevoCodigo"
-        ).value.trim();
-
+        )?.value.trim();
 
     const berritzegune =
         document.getElementById(
             "nuevoBerritzegune"
-        ).value.trim();
-
+        )?.value.trim();
 
     const espezialitatea =
         document.getElementById(
             "nuevoEspecialidad"
-        ).value;
-
+        )?.value;
 
     const email =
         document.getElementById(
             "nuevoEmail"
-        ).value.trim();
-
+        )?.value.trim();
 
     const centrosTexto =
         document.getElementById(
             "nuevoCentros"
-        ).value.trim();
+        )?.value.trim();
 
 
     if (
@@ -1019,46 +1141,62 @@ async function crearAholkularia(event) {
         !email
     ) {
 
-        mostrarCreateAlert(
+        mostrarFormularioMensaje(
+            message,
             "Bete derrigorrezko eremu guztiak.",
             "error"
         );
 
         return;
-
     }
 
 
-    button.disabled = true;
-    button.textContent = "Sortzen...";
-
-
-    try {
-
-        const centros = centrosTexto
+    const centros =
+        centrosTexto
             ? centrosTexto
                 .split(",")
-                .map(item => item.trim())
+                .map(valor => valor.trim())
                 .filter(Boolean)
             : [];
 
 
-        const {
-            data,
-            error
-        } = await window.hlbpSupabase.functions.invoke(
-            "create-aholkularia",
-            {
-                body: {
-                    nombre,
-                    codigo,
-                    berritzegune,
-                    espezialitatea,
-                    email,
-                    centros
-                }
-            }
+    button.disabled = true;
+
+    button.dataset.originalText =
+        button.textContent;
+
+    button.textContent =
+        "Sortzen...";
+
+
+    mostrarFormularioMensaje(
+        message,
+        "Aholkulariaren kontua sortzen...",
+        "loading"
+    );
+
+
+    try {
+
+        console.log(
+            "HLBP: create-aholkularia invoke..."
         );
+
+
+        const { data, error } =
+            await window.hlbpSupabase.functions.invoke(
+                "create-aholkularia",
+                {
+                    body: {
+                        nombre,
+                        codigo,
+                        berritzegune,
+                        espezialitatea,
+                        email,
+                        centros
+                    }
+                }
+            );
 
 
         if (error) {
@@ -1068,182 +1206,100 @@ async function crearAholkularia(event) {
                 error
             );
 
-            throw new Error(
-                error.message ||
-                "Ezin izan da Aholkularia sortu."
-            );
-
+            throw error;
         }
 
 
-        if (!data?.success) {
+        if (!data || data.error) {
 
             throw new Error(
                 data?.error ||
                 "Ezin izan da Aholkularia sortu."
             );
-
         }
 
 
-        mostrarCreateAlert(
-            "Aholkularia sortu da eta gonbidapena bidali da.",
+        console.log(
+            "HLBP: Aholkularia sortuta:",
+            data
+        );
+
+
+        mostrarFormularioMensaje(
+            message,
+            "Aholkularia behar bezala sortu da.",
             "success"
         );
 
 
         document
             .getElementById(
-                "createAholkulariaForm"
+                "nuevoAholkulariaForm"
             )
-            .reset();
+            ?.reset();
 
 
-        await cargarDatosAdministrazioa();
-
-
-        setTimeout(() => {
-
-            cerrarFormularioNuevo();
-
-        }, 1800);
+        setTimeout(
+            () => {
+                cargarListadoAholkulariak();
+            },
+            1500
+        );
 
 
     } catch (error) {
 
         console.error(
-            "Error creando Aholkularia:",
+            "Errorea Aholkularia sortzean:",
             error
         );
 
 
-        mostrarCreateAlert(
-            error.message ||
-            "Ezin izan da Aholkularia sortu.",
+        mostrarFormularioMensaje(
+            message,
+            obtenerMensajeError(error),
             "error"
         );
 
-    } finally {
 
         button.disabled = false;
+
         button.textContent =
+            button.dataset.originalText ||
             "➕ Gehitu Aholkularia";
-
     }
-
 }
 
 
-/* ============================================================
-   ALERTS
-   ============================================================ */
-
-function mostrarCreateAlert(
-    mensaje,
-    tipo
-) {
-
-    const alert =
-        document.getElementById(
-            "createAlert"
-        );
-
-    if (!alert) return;
-
-
-    alert.className =
-        `admin-alert ${tipo} is-visible`;
-
-    alert.textContent = mensaje;
-
-}
-
-
-function ocultarCreateAlert() {
-
-    const alert =
-        document.getElementById(
-            "createAlert"
-        );
-
-    if (!alert) return;
-
-
-    alert.className =
-        "admin-alert";
-
-    alert.textContent = "";
-
-}
-
-
-/* ============================================================
-   VISTA PERSONA
-   ============================================================ */
-
-async function abrirPersona(id) {
-
-    window.location.href =
-        `administrazioa.html?persona=${encodeURIComponent(id)}`;
-
-}
-
-
-async function renderPersona(id) {
-
-    const app =
-        document.getElementById("app");
-
-
-    app.innerHTML = `
-        ${window.HLBPLayout.getShell()}
-
-        <main class="content-area">
-
-            <div class="person-page">
-
-                <div class="person-back">
-
-                    <button
-                        class="admin-btn admin-btn-secondary"
-                        onclick="volverAdministrazioa()">
-                        ← Itzuli Aholkularietara
-                    </button>
-
-                </div>
-
-
-                <div
-                    id="personContent">
-
-                    <div class="admin-loading">
-                        Kargatzen...
-                    </div>
-
-                </div>
-
-            </div>
-
-        </main>
-    `;
-
-
-    await cargarPersona(id);
-
-}
-
+// ============================================================
+// PERSONA - VISTA INDIVIDUAL
+// ============================================================
 
 async function cargarPersona(id) {
 
+    const pageContent =
+        document.getElementById(
+            "pageContent"
+        );
+
+    if (!pageContent) return;
+
+
+    pageContent.innerHTML = `
+        <div class="admin-loading">
+            <div class="loading-spinner"></div>
+            <p>Aholkulariaren informazioa kargatzen...</p>
+        </div>
+    `;
+
+
     try {
 
-        const [
-            profileResponse,
-            recordsResponse,
-            relationsResponse
-        ] = await Promise.all([
-
-            window.hlbpSupabase
+        const {
+            data: persona,
+            error: personaError
+        } =
+            await window.hlbpSupabase
                 .from("profiles")
                 .select(`
                     id,
@@ -1257,82 +1313,119 @@ async function cargarPersona(id) {
                     activo
                 `)
                 .eq("id", id)
-                .single(),
+                .maybeSingle();
 
-            window.hlbpSupabase
+
+        if (personaError) {
+            throw personaError;
+        }
+
+
+        if (!persona) {
+
+            throw new Error(
+                "Ez da Aholkularia aurkitu."
+            );
+        }
+
+
+        const {
+            data: registros,
+            error: registrosError
+        } =
+            await window.hlbpSupabase
                 .from("registros")
                 .select(`
                     id,
                     usuario_id,
+                    fecha,
+                    fecha_fin,
                     centro_id,
                     tarea,
                     tipo,
                     subtipo,
                     alumno_id,
                     zehaztu,
-                    fecha,
-                    fecha_fin,
                     estado,
                     observaciones,
-                    created_at,
-                    updated_at
+                    created_at
                 `)
                 .eq("usuario_id", id)
                 .order("fecha", {
                     ascending: false
-                }),
+                });
 
-            window.hlbpSupabase
+
+        if (registrosError) {
+            throw registrosError;
+        }
+
+
+        const {
+            data: relaciones,
+            error: relacionesError
+        } =
+            await window.hlbpSupabase
                 .from("aholkulari_centros")
                 .select(`
+                    id,
+                    aholkulari_id,
                     centro_id
                 `)
-                .eq("aholkulari_id", id)
-
-        ]);
+                .eq("aholkulari_id", id);
 
 
-        if (profileResponse.error) {
-            throw profileResponse.error;
+        if (relacionesError) {
+            throw relacionesError;
         }
-
-        if (recordsResponse.error) {
-            throw recordsResponse.error;
-        }
-
-        if (relationsResponse.error) {
-            throw relationsResponse.error;
-        }
-
-
-        personaActual =
-            profileResponse.data;
-
-
-        registrosPersona =
-            recordsResponse.data || [];
 
 
         const centroIds =
-            (relationsResponse.data || [])
-                .map(item => item.centro_id);
-
-
-        const centrosPersona =
-            centrosGlobales.length
-                ? centrosGlobales.filter(
-                    centro =>
-                        centroIds.includes(centro.id)
-                )
-                : await cargarCentrosPorIds(
-                    centroIds
+            (relaciones || [])
+                .map(
+                    relacion =>
+                        relacion.centro_id
                 );
 
 
-        renderPersonaContenido(
-            personaActual,
-            registrosPersona,
-            centrosPersona
+        let centros = [];
+
+
+        if (centroIds.length) {
+
+            const {
+                data,
+                error
+            } =
+                await window.hlbpSupabase
+                    .from("centros")
+                    .select(`
+                        id,
+                        codigo,
+                        nombre,
+                        municipio,
+                        zona,
+                        activo
+                    `)
+                    .in("id", centroIds)
+                    .order("codigo", {
+                        ascending: true
+                    });
+
+
+            if (error) {
+                throw error;
+            }
+
+
+            centros = data || [];
+        }
+
+
+        renderPersona(
+            persona,
+            registros || [],
+            centros
         );
 
 
@@ -1344,487 +1437,536 @@ async function cargarPersona(id) {
         );
 
 
-        document.getElementById(
-            "personContent"
-        ).innerHTML = `
-
+        pageContent.innerHTML = `
             <div class="admin-panel">
 
-                <div class="admin-panel-body">
+                <div class="admin-empty-state">
 
-                    <div class="admin-empty">
-
-                        <strong>
-                            Ezin izan da Aholkularia kargatu.
-                        </strong>
-
-                        ${escapeHtml(error.message || "")}
-
+                    <div class="admin-empty-icon">
+                        ⚠️
                     </div>
+
+                    <h3>
+                        Ezin izan da informazioa kargatu
+                    </h3>
+
+                    <p>
+                        ${escapeHtml(
+                            obtenerMensajeError(error)
+                        )}
+                    </p>
+
+                    <button
+                        type="button"
+                        class="admin-btn admin-btn-primary"
+                        onclick="cargarListadoAholkulariak()"
+                    >
+                        ← Itzuli
+                    </button>
 
                 </div>
 
             </div>
         `;
-
     }
-
 }
 
 
-async function cargarCentrosPorIds(ids) {
+// ============================================================
+// RENDER PERSONA
+// ============================================================
 
-    if (!ids.length) return [];
-
-
-    const {
-        data,
-        error
-    } = await window.hlbpSupabase
-        .from("centros")
-        .select(`
-            id,
-            codigo,
-            nombre,
-            municipio,
-            zona,
-            activo
-        `)
-        .in("id", ids);
-
-
-    if (error) {
-        throw error;
-    }
-
-
-    return data || [];
-
-}
-
-
-/* ============================================================
-   PERSONA - CONTENIDO
-   ============================================================ */
-
-function renderPersonaContenido(
+function renderPersona(
     persona,
     registros,
     centros
 ) {
 
-    const nombre =
-        `${persona.nombre || ""} ${persona.apellidos || ""}`
-            .trim();
-
-
-    const content =
+    const pageContent =
         document.getElementById(
-            "personContent"
+            "pageContent"
         );
 
-
-    content.innerHTML = `
-
-        <div class="person-header">
-
-            <div class="person-header-main">
-
-                <h1>
-                    ${escapeHtml(nombre || "Aholkularia")}
-                </h1>
-
-                <p>
-                    ${escapeHtml(persona.email || "")}
-                </p>
-
-                <div class="person-meta">
-
-                    <span>
-                        Kodigoa:
-                        <strong>
-                            ${escapeHtml(persona.codigo || "—")}
-                        </strong>
-                    </span>
-
-                    <span>
-                        Berritzegunea:
-                        <strong>
-                            ${escapeHtml(persona.berritzegune || "—")}
-                        </strong>
-                    </span>
-
-                    <span>
-                        Espezialitatea:
-                        <strong>
-                            ${escapeHtml(persona.espezialitatea || "—")}
-                        </strong>
-                    </span>
-
-                </div>
-
-            </div>
+    if (!pageContent) return;
 
 
-            <div class="person-stats">
-
-                <div class="person-stat">
-
-                    <strong>
-                        ${registros.length}
-                    </strong>
-
-                    <span>
-                        Erregistroak
-                    </span>
-
-                </div>
+    const nombre =
+        `${persona.nombre || ""} ${persona.apellidos || ""}`
+            .trim() ||
+        persona.email ||
+        "Aholkularia";
 
 
-                <div class="person-stat">
+    pageContent.innerHTML = `
 
-                    <strong>
-                        ${centros.length}
-                    </strong>
+        <div class="admin-page">
 
-                    <span>
-                        Zentroak
-                    </span>
-
-                </div>
-
-
-                <div class="person-stat">
-
-                    <strong>
-                        ${
-                            registros.filter(
-                                r =>
-                                    r.estado === "Eginda"
-                            ).length
-                        }
-                    </strong>
-
-                    <span>
-                        Eginda
-                    </span>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <section class="admin-panel">
-
-            <div class="admin-panel-header">
+            <div class="admin-page-header">
 
                 <div>
 
-                    <h2>
-                        Erregistroen historia
-                    </h2>
+                    <div class="admin-breadcrumb">
+                        HLBP / Administrazioa /
+                        ${escapeHtml(nombre)}
+                    </div>
+
+                    <h1>
+                        ${escapeHtml(nombre)}
+                    </h1>
 
                     <p>
-                        Aholkulari honen erregistro guztiak.
+                        Aholkulariaren informazioa
+                        eta erregistroak.
                     </p>
 
                 </div>
 
 
-                <button
-                    class="admin-btn admin-btn-success"
-                    id="btnExcelPersona">
-                    📥 DESCARGAR A EXCEL
-                </button>
+                <div class="admin-header-actions">
 
-            </div>
+                    <button
+                        type="button"
+                        class="admin-btn admin-btn-secondary"
+                        onclick="cargarListadoAholkulariak()"
+                    >
+                        ← Itzuli
+                    </button>
 
-
-            <div class="record-filters">
-
-                <div class="wide">
-
-                    <input
-                        type="search"
-                        id="personFilterSearch"
-                        placeholder="Bilatu erregistro guztietan...">
-
-                </div>
-
-
-                <div>
-
-                    <input
-                        type="date"
-                        id="personFilterFechaDesde"
-                        title="Hasierako data">
-
-                </div>
-
-
-                <div>
-
-                    <input
-                        type="date"
-                        id="personFilterFechaHasta"
-                        title="Amaierako data">
-
-                </div>
-
-
-                <div>
-
-                    <select id="personFilterCentro">
-
-                        <option value="">
-                            Zentro guztiak
-                        </option>
-
-                        ${centros.map(c => `
-                            <option value="${c.id}">
-                                ${escapeHtml(
-                                    c.codigo || c.nombre || "Zentroa"
-                                )}
-                            </option>
-                        `).join("")}
-
-                    </select>
-
-                </div>
-
-
-                <div>
-
-                    <select id="personFilterTarea">
-
-                        <option value="">
-                            Eginkizun guztiak
-                        </option>
-
-                        ${getUniqueOptions(
-                            registros,
-                            "tarea"
-                        ).map(value => `
-                            <option value="${escapeHtml(value)}">
-                                ${escapeHtml(value)}
-                            </option>
-                        `).join("")}
-
-                    </select>
-
-                </div>
-
-
-                <div>
-
-                    <select id="personFilterTipo">
-
-                        <option value="">
-                            Mota guztiak
-                        </option>
-
-                        ${getUniqueOptions(
-                            registros,
-                            "tipo"
-                        ).map(value => `
-                            <option value="${escapeHtml(value)}">
-                                ${escapeHtml(value)}
-                            </option>
-                        `).join("")}
-
-                    </select>
-
-                </div>
-
-
-                <div>
-
-                    <select id="personFilterSubtipo">
-
-                        <option value="">
-                            Azpi-mota guztiak
-                        </option>
-
-                        ${getUniqueOptions(
-                            registros,
-                            "subtipo"
-                        ).map(value => `
-                            <option value="${escapeHtml(value)}">
-                                ${escapeHtml(value)}
-                            </option>
-                        `).join("")}
-
-                    </select>
-
-                </div>
-
-
-                <div>
-
-                    <select id="personFilterEstado">
-
-                        <option value="">
-                            Egoera guztiak
-                        </option>
-
-                        <option value="Egin gabe">
-                            Egin gabe
-                        </option>
-
-                        <option value="Eginda">
-                            Eginda
-                        </option>
-
-                    </select>
+                    <button
+                        type="button"
+                        class="admin-btn admin-btn-secondary"
+                        onclick="descargarExcelPersona()"
+                    >
+                        📥 Excelera deskargatu
+                    </button>
 
                 </div>
 
             </div>
 
 
-            <div class="admin-table-wrapper">
+            <!-- DATOS PERSONA -->
 
-                <table class="record-table">
+            <div class="admin-panel">
 
-                    <thead>
+                <div class="admin-panel-header">
 
-                        <tr>
-                            <th>Data</th>
-                            <th>Zentroa</th>
-                            <th>Eginkizuna</th>
-                            <th>Mota</th>
-                            <th>Azpi-mota</th>
-                            <th>Ikaslearen ID</th>
-                            <th>Zehaztu</th>
-                            <th>Amaiera</th>
-                            <th>Egoera</th>
-                            <th>Oharrak</th>
-                            <th>Ekintza</th>
-                        </tr>
+                    <div>
+                        <h2>Aholkulariaren datuak</h2>
+                    </div>
 
-                    </thead>
+                </div>
 
-                    <tbody id="personRecordsBody">
-                    </tbody>
 
-                </table>
+                <div class="person-info-grid">
+
+                    <div class="person-info-item">
+                        <span>Kodigoa</span>
+                        <strong>
+                            ${escapeHtml(
+                                persona.codigo || "—"
+                            )}
+                        </strong>
+                    </div>
+
+
+                    <div class="person-info-item">
+                        <span>Izena</span>
+                        <strong>
+                            ${escapeHtml(nombre)}
+                        </strong>
+                    </div>
+
+
+                    <div class="person-info-item">
+                        <span>Emaila</span>
+                        <strong>
+                            ${escapeHtml(
+                                persona.email || "—"
+                            )}
+                        </strong>
+                    </div>
+
+
+                    <div class="person-info-item">
+                        <span>Kokapena</span>
+                        <strong>
+                            ${escapeHtml(
+                                persona.berritzegune || "—"
+                            )}
+                        </strong>
+                    </div>
+
+
+                    <div class="person-info-item">
+                        <span>Espezialitatea</span>
+                        <strong>
+                            ${escapeHtml(
+                                persona.espezialitatea || "—"
+                            )}
+                        </strong>
+                    </div>
+
+
+                    <div class="person-info-item">
+                        <span>Zentroak</span>
+                        <strong>
+                            ${centros.length}
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div class="person-centers">
+
+                    <h3>
+                        Esleitutako zentroak
+                    </h3>
+
+                    ${
+                        centros.length
+                            ? `
+                                <div class="person-center-list">
+
+                                    ${centros
+                                        .map(
+                                            centro => `
+                                                <span class="admin-badge">
+                                                    ${escapeHtml(
+                                                        centro.codigo ||
+                                                        centro.nombre ||
+                                                        "—"
+                                                    )}
+                                                </span>
+                                            `
+                                        )
+                                        .join("")}
+
+                                </div>
+                              `
+                            : `
+                                <p class="admin-muted">
+                                    Ez dago zentrorik esleituta.
+                                </p>
+                              `
+                    }
+
+                </div>
 
             </div>
 
-        </section>
 
+            <!-- REGISTROS -->
+
+            <div class="admin-panel">
+
+                <div class="admin-panel-header">
+
+                    <div>
+
+                        <h2>
+                            Erregistroak
+                        </h2>
+
+                        <p>
+                            Guztira:
+                            <strong>
+                                ${registros.length}
+                            </strong>
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                ${renderFiltrosRegistros()}
+
+
+                <div
+                    id="personaRecordsContainer"
+                    class="admin-table-container"
+                ></div>
+
+            </div>
+
+        </div>
     `;
 
 
-    window.__personCentros = centros;
+    window.HLBPAdminPersona = {
+        persona,
+        registros,
+        centros
+    };
 
 
-    document
-        .getElementById("btnExcelPersona")
-        ?.addEventListener(
-            "click",
-            descargarExcelPersona
-        );
+    inicializarFiltrosRegistros();
 
-
-    [
-        "personFilterSearch",
-        "personFilterFechaDesde",
-        "personFilterFechaHasta",
-        "personFilterCentro",
-        "personFilterTarea",
-        "personFilterTipo",
-        "personFilterSubtipo",
-        "personFilterEstado"
-    ].forEach(id => {
-
-        document
-            .getElementById(id)
-            ?.addEventListener(
-                "input",
-                aplicarFiltrosPersona
-            );
-
-        document
-            .getElementById(id)
-            ?.addEventListener(
-                "change",
-                aplicarFiltrosPersona
-            );
-
-    });
-
-
-    renderTablaPersona(registros);
-
+    renderTablaRegistros(
+        registros
+    );
 }
 
 
-/* ============================================================
-   FILTROS PERSONA
-   ============================================================ */
+// ============================================================
+// FILTROS REGISTROS
+// ============================================================
 
-function aplicarFiltrosPersona() {
+function renderFiltrosRegistros() {
 
-    const search =
-        (
-            document.getElementById(
-                "personFilterSearch"
-            )?.value || ""
-        )
-        .trim()
-        .toLowerCase();
+    return `
+
+        <div class="admin-filters admin-record-filters">
+
+            <div class="admin-filter-group">
+
+                <label for="recordSearch">
+                    Bilatu
+                </label>
+
+                <input
+                    type="search"
+                    id="recordSearch"
+                    class="admin-input"
+                    placeholder="Bilatu erregistroetan..."
+                >
+
+            </div>
 
 
-    const desde =
+            <div class="admin-filter-group">
+
+                <label for="recordFechaDesde">
+                    Data hasiera
+                </label>
+
+                <input
+                    type="date"
+                    id="recordFechaDesde"
+                    class="admin-input"
+                >
+
+            </div>
+
+
+            <div class="admin-filter-group">
+
+                <label for="recordFechaHasta">
+                    Data amaiera
+                </label>
+
+                <input
+                    type="date"
+                    id="recordFechaHasta"
+                    class="admin-input"
+                >
+
+            </div>
+
+
+            <div class="admin-filter-group">
+
+                <label for="recordCentro">
+                    Zentroa
+                </label>
+
+                <input
+                    type="text"
+                    id="recordCentro"
+                    class="admin-input"
+                    placeholder="Zentroa..."
+                >
+
+            </div>
+
+
+            <div class="admin-filter-group">
+
+                <label for="recordTarea">
+                    Eginkizuna
+                </label>
+
+                <input
+                    type="text"
+                    id="recordTarea"
+                    class="admin-input"
+                    placeholder="Eginkizuna..."
+                >
+
+            </div>
+
+
+            <div class="admin-filter-group">
+
+                <label for="recordTipo">
+                    Mota
+                </label>
+
+                <input
+                    type="text"
+                    id="recordTipo"
+                    class="admin-input"
+                    placeholder="Mota..."
+                >
+
+            </div>
+
+
+            <div class="admin-filter-group">
+
+                <label for="recordSubtipo">
+                    Azpi-mota
+                </label>
+
+                <input
+                    type="text"
+                    id="recordSubtipo"
+                    class="admin-input"
+                    placeholder="Azpi-mota..."
+                >
+
+            </div>
+
+
+            <div class="admin-filter-group">
+
+                <label for="recordEstado">
+                    Egoera
+                </label>
+
+                <select
+                    id="recordEstado"
+                    class="admin-input"
+                >
+
+                    <option value="">
+                        Guztiak
+                    </option>
+
+                    <option value="Egin gabe">
+                        Egin gabe
+                    </option>
+
+                    <option value="Eginda">
+                        Eginda
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+function inicializarFiltrosRegistros() {
+
+    const ids = [
+        "recordSearch",
+        "recordFechaDesde",
+        "recordFechaHasta",
+        "recordCentro",
+        "recordTarea",
+        "recordTipo",
+        "recordSubtipo",
+        "recordEstado"
+    ];
+
+
+    ids.forEach(id => {
+
+        const elemento =
+            document.getElementById(id);
+
+        if (!elemento) return;
+
+        elemento.addEventListener(
+            "input",
+            aplicarFiltrosRegistros
+        );
+
+        elemento.addEventListener(
+            "change",
+            aplicarFiltrosRegistros
+        );
+    });
+}
+
+
+function aplicarFiltrosRegistros() {
+
+    const registros =
+        window.HLBPAdminPersona
+            ?.registros || [];
+
+
+    const texto =
         document.getElementById(
-            "personFilterFechaDesde"
+            "recordSearch"
+        )?.value
+            .trim()
+            .toLowerCase() || "";
+
+
+    const fechaDesde =
+        document.getElementById(
+            "recordFechaDesde"
         )?.value || "";
 
 
-    const hasta =
+    const fechaHasta =
         document.getElementById(
-            "personFilterFechaHasta"
+            "recordFechaHasta"
         )?.value || "";
 
 
     const centro =
         document.getElementById(
-            "personFilterCentro"
-        )?.value || "";
+            "recordCentro"
+        )?.value
+            .trim()
+            .toLowerCase() || "";
 
 
     const tarea =
         document.getElementById(
-            "personFilterTarea"
-        )?.value || "";
+            "recordTarea"
+        )?.value
+            .trim()
+            .toLowerCase() || "";
 
 
     const tipo =
         document.getElementById(
-            "personFilterTipo"
-        )?.value || "";
+            "recordTipo"
+        )?.value
+            .trim()
+            .toLowerCase() || "";
 
 
     const subtipo =
         document.getElementById(
-            "personFilterSubtipo"
-        )?.value || "";
+            "recordSubtipo"
+        )?.value
+            .trim()
+            .toLowerCase() || "";
 
 
     const estado =
         document.getElementById(
-            "personFilterEstado"
+            "recordEstado"
         )?.value || "";
 
 
     const filtrados =
-        registrosPersona.filter(registro => {
+        registros.filter(registro => {
 
-            const texto = [
-
+            const valoresTexto = [
+                registro.fecha,
+                registro.fecha_fin,
                 registro.tarea,
                 registro.tipo,
                 registro.subtipo,
@@ -1832,145 +1974,142 @@ function aplicarFiltrosPersona() {
                 registro.zehaztu,
                 registro.estado,
                 registro.observaciones
-
             ]
-                .filter(Boolean)
-                .join(" ")
-                .toLowerCase();
+                .map(valor =>
+                    String(valor || "")
+                        .toLowerCase()
+                )
+                .join(" ");
 
 
-            if (
-                search &&
-                !texto.includes(search)
-            ) {
-                return false;
-            }
+            const coincideTexto =
+                !texto ||
+                valoresTexto.includes(texto);
 
 
-            if (
-                desde &&
-                (!registro.fecha ||
-                    registro.fecha < desde)
-            ) {
-                return false;
-            }
+            const fecha =
+                registro.fecha || "";
 
 
-            if (
-                hasta &&
-                (!registro.fecha ||
-                    registro.fecha > hasta)
-            ) {
-                return false;
-            }
+            const coincideDesde =
+                !fechaDesde ||
+                fecha >= fechaDesde;
 
 
-            if (
-                centro &&
-                registro.centro_id !== centro
-            ) {
-                return false;
-            }
+            const coincideHasta =
+                !fechaHasta ||
+                fecha <= fechaHasta;
 
 
-            if (
-                tarea &&
-                registro.tarea !== tarea
-            ) {
-                return false;
-            }
+            const coincideCentro =
+                !centro ||
+                String(
+                    registro.centro_id || ""
+                )
+                    .toLowerCase()
+                    .includes(centro);
 
 
-            if (
-                tipo &&
-                registro.tipo !== tipo
-            ) {
-                return false;
-            }
+            const coincideTarea =
+                !tarea ||
+                String(
+                    registro.tarea || ""
+                )
+                    .toLowerCase()
+                    .includes(tarea);
 
 
-            if (
-                subtipo &&
-                registro.subtipo !== subtipo
-            ) {
-                return false;
-            }
+            const coincideTipo =
+                !tipo ||
+                String(
+                    registro.tipo || ""
+                )
+                    .toLowerCase()
+                    .includes(tipo);
 
 
-            if (
-                estado &&
-                registro.estado !== estado
-            ) {
-                return false;
-            }
+            const coincideSubtipo =
+                !subtipo ||
+                String(
+                    registro.subtipo || ""
+                )
+                    .toLowerCase()
+                    .includes(subtipo);
 
 
-            return true;
+            const coincideEstado =
+                !estado ||
+                registro.estado === estado;
 
+
+            return (
+                coincideTexto &&
+                coincideDesde &&
+                coincideHasta &&
+                coincideCentro &&
+                coincideTarea &&
+                coincideTipo &&
+                coincideSubtipo &&
+                coincideEstado
+            );
         });
 
 
-    renderTablaPersona(filtrados);
-
+    renderTablaRegistros(
+        filtrados
+    );
 }
 
 
-/* ============================================================
-   TABLA PERSONA
-   ============================================================ */
+// ============================================================
+// TABLA REGISTROS
+// ============================================================
 
-function renderTablaPersona(registros) {
+function renderTablaRegistros(registros) {
 
-    const body =
+    const container =
         document.getElementById(
-            "personRecordsBody"
+            "personaRecordsContainer"
         );
 
-    if (!body) return;
+    if (!container) return;
 
 
     if (!registros.length) {
 
-        body.innerHTML = `
+        container.innerHTML = `
+            <div class="admin-empty-state">
 
-            <tr>
+                <div class="admin-empty-icon">
+                    📋
+                </div>
 
-                <td colspan="11">
+                <h3>
+                    Ez dago erregistrorik
+                </h3>
 
-                    <div class="admin-empty">
+                <p>
+                    Ez da erregistrorik aurkitu
+                    hautatutako irizpideekin.
+                </p>
 
-                        <strong>
-                            Ez da erregistrorik aurkitu.
-                        </strong>
-
-                        Saiatu beste iragazki batekin.
-
-                    </div>
-
-                </td>
-
-            </tr>
+            </div>
         `;
 
         return;
-
     }
 
 
-    body.innerHTML =
+    const rows =
         registros.map(registro => {
 
-            const centro =
-                (window.__personCentros || [])
-                    .find(
-                        c =>
-                            c.id ===
-                            registro.centro_id
-                    );
+            const estadoClass =
+                registro.estado === "Eginda"
+                    ? "admin-status-success"
+                    : "admin-status-pending";
 
 
             return `
-
                 <tr>
 
                     <td>
@@ -1978,15 +2117,6 @@ function renderTablaPersona(registros) {
                             formatearFecha(
                                 registro.fecha
                             )
-                        )}
-                    </td>
-
-
-                    <td>
-                        ${escapeHtml(
-                            centro?.codigo ||
-                            centro?.nombre ||
-                            "—"
                         )}
                     </td>
 
@@ -2020,73 +2150,72 @@ function renderTablaPersona(registros) {
 
 
                     <td>
-                        ${escapeHtml(
-                            registro.zehaztu || "—"
-                        )}
-                    </td>
-
-
-                    <td>
-                        ${escapeHtml(
-                            formatearFecha(
-                                registro.fecha_fin
-                            )
-                        )}
-                    </td>
-
-
-                    <td>
-
-                        ${
-                            registro.estado
-                                ? `
-                                    <span class="status-badge ${
-                                        registro.estado === "Eginda"
-                                            ? "status-done"
-                                            : "status-pending"
-                                    }">
-                                        ${escapeHtml(
-                                            registro.estado
-                                        )}
-                                    </span>
-                                  `
-                                : "—"
-                        }
-
-                    </td>
-
-
-                    <td>
-                        ${escapeHtml(
-                            registro.observaciones || "—"
-                        )}
+                        <span class="${estadoClass}">
+                            ${escapeHtml(
+                                registro.estado || "—"
+                            )}
+                        </span>
                     </td>
 
 
                     <td>
 
                         <button
-                            class="admin-btn admin-btn-danger admin-btn-small"
-                            onclick="eliminarRegistro('${registro.id}')">
+                            type="button"
+                            class="admin-btn admin-btn-small admin-btn-danger"
+                            onclick="eliminarRegistro('${escapeHtml(
+                                registro.id
+                            )}')"
+                        >
                             EZABATU
                         </button>
 
                     </td>
 
                 </tr>
-
             `;
-
         }).join("");
 
+
+    container.innerHTML = `
+
+        <div class="admin-table-wrapper">
+
+            <table class="admin-table admin-records-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Data</th>
+                        <th>Eginkizuna</th>
+                        <th>Mota</th>
+                        <th>Azpi-mota</th>
+                        <th>Ikaslearen ID</th>
+                        <th>Egoera</th>
+                        <th>Ekintza</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+                    ${rows}
+                </tbody>
+
+            </table>
+
+        </div>
+    `;
 }
 
 
-/* ============================================================
-   ELIMINAR REGISTRO
-   ============================================================ */
+// ============================================================
+// ELIMINAR REGISTRO
+// ============================================================
 
 async function eliminarRegistro(id) {
+
+    if (!id) return;
+
 
     const confirmar =
         window.confirm(
@@ -2094,19 +2223,18 @@ async function eliminarRegistro(id) {
         );
 
 
-    if (!confirmar) {
-        return;
-    }
+    if (!confirmar) return;
 
 
     try {
 
         const {
             error
-        } = await window.hlbpSupabase
-            .from("registros")
-            .delete()
-            .eq("id", id);
+        } =
+            await window.hlbpSupabase
+                .from("registros")
+                .delete()
+                .eq("id", id);
 
 
         if (error) {
@@ -2114,14 +2242,15 @@ async function eliminarRegistro(id) {
         }
 
 
-        registrosPersona =
-            registrosPersona.filter(
+        window.HLBPAdminPersona.registros =
+            window.HLBPAdminPersona.registros.filter(
                 registro =>
-                    registro.id !== id
+                    String(registro.id) !==
+                    String(id)
             );
 
 
-        aplicarFiltrosPersona();
+        aplicarFiltrosRegistros();
 
 
     } catch (error) {
@@ -2135,57 +2264,52 @@ async function eliminarRegistro(id) {
         alert(
             "Ezin izan da erregistroa ezabatu."
         );
-
     }
-
 }
 
 
-/* ============================================================
-   EXCEL GLOBAL
-   ============================================================ */
+// ============================================================
+// EXCEL GLOBAL
+// ============================================================
 
 async function descargarExcelGlobal() {
 
-    if (
-        typeof XLSX === "undefined"
-    ) {
-
-        alert(
-            "Excel liburutegia ez dago kargatuta."
-        );
-
-        return;
-
-    }
-
-
     try {
 
+        if (typeof XLSX === "undefined") {
+
+            alert(
+                "Excel esportatzeko liburutegia ez dago kargatuta."
+            );
+
+            return;
+        }
+
+
         const {
-            data,
+            data: registros,
             error
-        } = await window.hlbpSupabase
-            .from("registros")
-            .select(`
-                id,
-                usuario_id,
-                centro_id,
-                tarea,
-                tipo,
-                subtipo,
-                alumno_id,
-                zehaztu,
-                fecha,
-                fecha_fin,
-                estado,
-                observaciones,
-                created_at,
-                updated_at
-            `)
-            .order("fecha", {
-                ascending: false
-            });
+        } =
+            await window.hlbpSupabase
+                .from("registros")
+                .select(`
+                    id,
+                    usuario_id,
+                    centro_id,
+                    tarea,
+                    tipo,
+                    subtipo,
+                    alumno_id,
+                    zehaztu,
+                    fecha,
+                    fecha_fin,
+                    estado,
+                    observaciones,
+                    created_at
+                `)
+                .order("fecha", {
+                    ascending: false
+                });
 
 
         if (error) {
@@ -2193,284 +2317,185 @@ async function descargarExcelGlobal() {
         }
 
 
-        const registros =
-            data || [];
+        const {
+            data: perfiles,
+            error: perfilesError
+        } =
+            await window.hlbpSupabase
+                .from("profiles")
+                .select(`
+                    id,
+                    email,
+                    nombre,
+                    apellidos,
+                    codigo,
+                    berritzegune,
+                    espezialitatea
+                `);
+
+
+        if (perfilesError) {
+            throw perfilesError;
+        }
+
+
+        const {
+            data: centros,
+            error: centrosError
+        } =
+            await window.hlbpSupabase
+                .from("centros")
+                .select(`
+                    id,
+                    codigo,
+                    nombre,
+                    municipio,
+                    zona
+                `);
+
+
+        if (centrosError) {
+            throw centrosError;
+        }
+
+
+        const perfilesMap =
+            new Map(
+                (perfiles || []).map(
+                    perfil => [
+                        String(perfil.id),
+                        perfil
+                    ]
+                )
+            );
+
+
+        const centrosMap =
+            new Map(
+                (centros || []).map(
+                    centro => [
+                        String(centro.id),
+                        centro
+                    ]
+                )
+            );
 
 
         const filas =
-            registros.map(registro => {
+            (registros || []).map(
+                registro => {
 
-                const persona =
-                    aholkulariak.find(
-                        p =>
-                            p.id ===
-                            registro.usuario_id
-                    );
-
-
-                const centro =
-                    centrosGlobales.find(
-                        c =>
-                            c.id ===
-                            registro.centro_id
-                    );
+                    const perfil =
+                        perfilesMap.get(
+                            String(
+                                registro.usuario_id
+                            )
+                        ) || {};
 
 
-                return {
+                    const centro =
+                        centrosMap.get(
+                            String(
+                                registro.centro_id
+                            )
+                        ) || {};
 
-                    "ID registro":
-                        registro.id || "",
 
-                    "Aholkulari ID":
-                        registro.usuario_id || "",
+                    return {
 
-                    "Aholkulari":
-                        persona
-                            ? `${persona.nombre || ""} ${persona.apellidos || ""}`.trim()
-                            : "",
+                        "Aholkulariaren kodigoa":
+                            perfil.codigo || "",
 
-                    "Email":
-                        persona?.email || "",
+                        "Aholkularia":
+                            `${perfil.nombre || ""} ${perfil.apellidos || ""}`
+                                .trim(),
 
-                    "Kodigoa":
-                        persona?.codigo || "",
+                        "Emaila":
+                            perfil.email || "",
 
-                    "Berritzegunea":
-                        persona?.berritzegune || "",
+                        "Berritzegunea":
+                            perfil.berritzegune || "",
 
-                    "Espezialitatea":
-                        persona?.espezialitatea || "",
+                        "Espezialitatea":
+                            perfil.espezialitatea || "",
 
-                    "Zentroaren ID":
-                        registro.centro_id || "",
+                        "Zentroaren kodigoa":
+                            centro.codigo || "",
 
-                    "Zentro kodea":
-                        centro?.codigo || "",
+                        "Zentroa":
+                            centro.nombre || "",
 
-                    "Zentroa":
-                        centro?.nombre || "",
+                        "Udalerria":
+                            centro.municipio || "",
 
-                    "Udalerria":
-                        centro?.municipio || "",
+                        "Zona":
+                            centro.zona || "",
 
-                    "Zona":
-                        centro?.zona || "",
+                        "Eginkizuna":
+                            registro.tarea || "",
 
-                    "Eginkizuna":
-                        registro.tarea || "",
+                        "Mota":
+                            registro.tipo || "",
 
-                    "Mota":
-                        registro.tipo || "",
+                        "Azpi-mota":
+                            registro.subtipo || "",
 
-                    "Azpi-mota":
-                        registro.subtipo || "",
+                        "Ikaslearen ID":
+                            registro.alumno_id || "",
 
-                    "Ikaslearen ID":
-                        registro.alumno_id || "",
+                        "Zehaztu":
+                            registro.zehaztu || "",
 
-                    "Zehaztu":
-                        registro.zehaztu || "",
+                        "Egiteko data":
+                            registro.fecha || "",
 
-                    "Egiteko data":
-                        registro.fecha || "",
+                        "Amaiera-data":
+                            registro.fecha_fin || "",
 
-                    "Amaiera-data":
-                        registro.fecha_fin || "",
+                        "Egoera":
+                            registro.estado || "",
 
-                    "Egoera":
-                        registro.estado || "",
+                        "Oharrak":
+                            registro.observaciones || "",
 
-                    "Oharrak":
-                        registro.observaciones || "",
+                        "Erregistro ID":
+                            registro.id || "",
 
-                    "Sortze-data":
-                        registro.created_at || "",
-
-                    "Eguneratze-data":
-                        registro.updated_at || ""
-
-                };
-
-            });
+                        "Sortze data":
+                            registro.created_at || ""
+                    };
+                }
+            );
 
 
         const worksheet =
-            XLSX.utils.json_to_sheet(filas);
-
-
-        const workbook =
-            XLSX.utils.book_new();
-
-
-        XLSX.utils.book_append_sheet(
-            workbook,
-            worksheet,
-            "Erregistro guztiak"
-        );
+            XLSX.utils.json_to_sheet(
+                filas
+            );
 
 
         worksheet["!cols"] = [
-
-            { wch: 38 },
-            { wch: 38 },
+            { wch: 18 },
             { wch: 28 },
             { wch: 32 },
-            { wch: 14 },
+            { wch: 22 },
+            { wch: 20 },
+            { wch: 18 },
+            { wch: 35 },
             { wch: 20 },
             { wch: 20 },
-            { wch: 38 },
-            { wch: 15 },
+            { wch: 35 },
+            { wch: 25 },
             { wch: 30 },
             { wch: 20 },
-            { wch: 20 },
-            { wch: 32 },
-            { wch: 25 },
-            { wch: 25 },
-            { wch: 20 },
-            { wch: 25 },
-            { wch: 16 },
-            { wch: 16 },
-            { wch: 16 },
-            { wch: 45 },
-            { wch: 25 },
+            { wch: 30 },
+            { wch: 15 },
+            { wch: 15 },
+            { wch: 15 },
+            { wch: 50 },
+            { wch: 38 },
             { wch: 25 }
-
         ];
-
-
-        XLSX.writeFile(
-            workbook,
-            `HLBP_erregistro_guztiak_${obtenerFechaArchivo()}.xlsx`
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Error exportando Excel:",
-            error
-        );
-
-
-        alert(
-            "Ezin izan da Excel sortu."
-        );
-
-    }
-
-}
-
-
-/* ============================================================
-   EXCEL PERSONA
-   ============================================================ */
-
-async function descargarExcelPersona() {
-
-    if (
-        typeof XLSX === "undefined"
-    ) {
-
-        alert(
-            "Excel liburutegia ez dago kargatuta."
-        );
-
-        return;
-
-    }
-
-
-    if (!personaActual) {
-        return;
-    }
-
-
-    try {
-
-        const filas =
-            registrosPersona.map(registro => {
-
-                const centro =
-                    (window.__personCentros || [])
-                        .find(
-                            c =>
-                                c.id ===
-                                registro.centro_id
-                        );
-
-
-                return {
-
-                    "ID registro":
-                        registro.id || "",
-
-                    "Aholkulari":
-                        `${personaActual.nombre || ""} ${personaActual.apellidos || ""}`.trim(),
-
-                    "Email":
-                        personaActual.email || "",
-
-                    "Kodigoa":
-                        personaActual.codigo || "",
-
-                    "Berritzegunea":
-                        personaActual.berritzegune || "",
-
-                    "Espezialitatea":
-                        personaActual.espezialitatea || "",
-
-                    "Zentro kodea":
-                        centro?.codigo || "",
-
-                    "Zentroa":
-                        centro?.nombre || "",
-
-                    "Udalerria":
-                        centro?.municipio || "",
-
-                    "Zona":
-                        centro?.zona || "",
-
-                    "Eginkizuna":
-                        registro.tarea || "",
-
-                    "Mota":
-                        registro.tipo || "",
-
-                    "Azpi-mota":
-                        registro.subtipo || "",
-
-                    "Ikaslearen ID":
-                        registro.alumno_id || "",
-
-                    "Zehaztu":
-                        registro.zehaztu || "",
-
-                    "Egiteko data":
-                        registro.fecha || "",
-
-                    "Amaiera-data":
-                        registro.fecha_fin || "",
-
-                    "Egoera":
-                        registro.estado || "",
-
-                    "Oharrak":
-                        registro.observaciones || "",
-
-                    "Sortze-data":
-                        registro.created_at || "",
-
-                    "Eguneratze-data":
-                        registro.updated_at || ""
-
-                };
-
-            });
-
-
-        const worksheet =
-            XLSX.utils.json_to_sheet(filas);
 
 
         const workbook =
@@ -2484,50 +2509,265 @@ async function descargarExcelPersona() {
         );
 
 
+        const fecha =
+            new Date()
+                .toISOString()
+                .slice(0, 10);
+
+
         XLSX.writeFile(
             workbook,
-            `HLBP_${normalizarNombreArchivo(
-                personaActual.nombre
-            )}_${obtenerFechaArchivo()}.xlsx`
+            `HLBP_erregistroak_${fecha}.xlsx`
         );
 
 
     } catch (error) {
 
         console.error(
-            "Error exportando Excel:",
+            "Error exportando Excel global:",
             error
         );
 
 
         alert(
-            "Ezin izan da Excel sortu."
+            "Ezin izan da Excel fitxategia sortu."
+        );
+    }
+}
+
+
+// ============================================================
+// EXCEL PERSONA
+// ============================================================
+
+async function descargarExcelPersona() {
+
+    try {
+
+        if (typeof XLSX === "undefined") {
+
+            alert(
+                "Excel esportatzeko liburutegia ez dago kargatuta."
+            );
+
+            return;
+        }
+
+
+        const datos =
+            window.HLBPAdminPersona;
+
+
+        if (!datos) {
+
+            alert(
+                "Ez dago Aholkulariaren daturik."
+            );
+
+            return;
+        }
+
+
+        const {
+            persona,
+            registros
+        } = datos;
+
+
+        const filas =
+            registros.map(
+                registro => ({
+
+                    "Aholkulariaren kodigoa":
+                        persona.codigo || "",
+
+                    "Aholkularia":
+                        `${persona.nombre || ""} ${persona.apellidos || ""}`
+                            .trim(),
+
+                    "Emaila":
+                        persona.email || "",
+
+                    "Berritzegunea":
+                        persona.berritzegune || "",
+
+                    "Espezialitatea":
+                        persona.espezialitatea || "",
+
+                    "Eginkizuna":
+                        registro.tarea || "",
+
+                    "Mota":
+                        registro.tipo || "",
+
+                    "Azpi-mota":
+                        registro.subtipo || "",
+
+                    "Ikaslearen ID":
+                        registro.alumno_id || "",
+
+                    "Zehaztu":
+                        registro.zehaztu || "",
+
+                    "Egiteko data":
+                        registro.fecha || "",
+
+                    "Amaiera-data":
+                        registro.fecha_fin || "",
+
+                    "Egoera":
+                        registro.estado || "",
+
+                    "Oharrak":
+                        registro.observaciones || "",
+
+                    "Erregistro ID":
+                        registro.id || "",
+
+                    "Sortze data":
+                        registro.created_at || ""
+                })
+            );
+
+
+        const worksheet =
+            XLSX.utils.json_to_sheet(
+                filas
+            );
+
+
+        const workbook =
+            XLSX.utils.book_new();
+
+
+        XLSX.utils.book_append_sheet(
+            workbook,
+            worksheet,
+            "Erregistroak"
         );
 
-    }
 
+        const codigo =
+            persona.codigo ||
+            "aholkularia";
+
+
+        XLSX.writeFile(
+            workbook,
+            `HLBP_${codigo}_erregistroak.xlsx`
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Error exportando Excel persona:",
+            error
+        );
+
+
+        alert(
+            "Ezin izan da Excel fitxategia sortu."
+        );
+    }
 }
 
 
-/* ============================================================
-   UTILIDADES
-   ============================================================ */
+// ============================================================
+// BERRITZEGUNE OPTIONS
+// ============================================================
 
-function getUniqueOptions(
-    registros,
-    campo
+function obtenerBerritzeguneOptions(personas) {
+
+    const valores =
+        [...new Set(
+            personas
+                .map(
+                    persona =>
+                        persona.berritzegune
+                )
+                .filter(Boolean)
+        )]
+        .sort(
+            (a, b) =>
+                String(a).localeCompare(
+                    String(b)
+                )
+        );
+
+
+    return valores
+        .map(
+            valor => `
+                <option value="${escapeHtml(valor)}">
+                    ${escapeHtml(valor)}
+                </option>
+            `
+        )
+        .join("");
+}
+
+
+// ============================================================
+// MENSAJES
+// ============================================================
+
+function mostrarFormularioMensaje(
+    elemento,
+    texto,
+    tipo
 ) {
 
-    return [
-        ...new Set(
-            registros
-                .map(item => item[campo])
-                .filter(Boolean)
-        )
-    ].sort();
+    if (!elemento) return;
 
+    elemento.className =
+        `admin-form-message ${tipo}`;
+
+    elemento.textContent =
+        texto;
 }
 
+
+function mostrarErrorAdministrazioa(error) {
+
+    const app =
+        document.getElementById("app");
+
+    if (!app) return;
+
+
+    app.innerHTML = `
+        <div class="app-error-state">
+
+            <div>
+                ⚠️
+            </div>
+
+            <h2>
+                Ezin izan da Administrazioa kargatu
+            </h2>
+
+            <p>
+                ${escapeHtml(
+                    obtenerMensajeError(error)
+                )}
+            </p>
+
+            <button
+                type="button"
+                onclick="window.location.reload()"
+            >
+                Berriro saiatu
+            </button>
+
+        </div>
+    `;
+}
+
+
+// ============================================================
+// UTILIDADES
+// ============================================================
 
 function formatearFecha(fecha) {
 
@@ -2535,97 +2775,148 @@ function formatearFecha(fecha) {
         return "—";
     }
 
+    try {
 
-    const partes =
-        String(fecha).split("-");
+        const partes =
+            String(fecha).split("-");
+
+        if (partes.length === 3) {
+
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
+        return fecha;
+
+    } catch {
+
+        return fecha;
+    }
+}
 
 
-    if (partes.length === 3) {
+function obtenerMensajeError(error) {
 
-        return `${partes[2]}/${partes[1]}/${partes[0]}`;
-
+    if (!error) {
+        return "Errore ezezaguna.";
     }
 
 
-    return fecha;
+    if (typeof error === "string") {
+        return error;
+    }
 
+
+    if (error.message) {
+        return error.message;
+    }
+
+
+    if (error.error_description) {
+        return error.error_description;
+    }
+
+
+    if (error.details) {
+        return error.details;
+    }
+
+
+    return "Errore ezezaguna.";
 }
 
 
-function obtenerFechaArchivo() {
+function escapeHtml(valor) {
 
-    const fecha = new Date();
-
-    const y =
-        fecha.getFullYear();
-
-    const m =
-        String(
-            fecha.getMonth() + 1
-        ).padStart(2, "0");
-
-    const d =
-        String(
-            fecha.getDate()
-        ).padStart(2, "0");
-
-
-    return `${y}-${m}-${d}`;
-
+    return String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 
-function normalizarNombreArchivo(
-    nombre
-) {
+// ============================================================
+// ARRANQUE DE PERSONA DESDE URL
+// ============================================================
 
-    return String(
-        nombre || "aholkularia"
-    )
-        .normalize("NFD")
-        .replace(
-            /[\u0300-\u036f]/g,
-            ""
-        )
-        .replace(
-            /[^a-zA-Z0-9_-]+/g,
-            "_"
+async function comprobarPersonaURL() {
+
+    const parametros =
+        new URLSearchParams(
+            window.location.search
         );
 
+
+    const personaId =
+        parametros.get("persona");
+
+
+    if (!personaId) {
+        return false;
+    }
+
+
+    await cargarPersona(
+        personaId
+    );
+
+
+    return true;
 }
 
 
-function escapeHtml(value) {
+// ============================================================
+// SOBRESCRIBIMOS EL FLUJO PRINCIPAL
+// PARA SOPORTAR ?persona=ID
+// ============================================================
 
-    return String(
-        value ?? ""
-    )
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-
-}
+const iniciarAdministrazioaOriginal =
+    iniciarAdministrazioa;
 
 
-function volverAdministrazioa() {
+// Reemplazamos el comportamiento inicial
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
 
-    window.location.href =
-        "administrazioa.html";
+        // Este listener adicional solamente se encarga
+        // de abrir la ficha individual si existe ?persona=ID.
 
-}
+        // El listener principal ya habrá cargado el layout.
+        setTimeout(
+            async () => {
 
+                const parametros =
+                    new URLSearchParams(
+                        window.location.search
+                    );
 
-/* ============================================================
-   GLOBAL
-   ============================================================ */
+                const personaId =
+                    parametros.get("persona");
 
-window.abrirPersona =
-    abrirPersona;
+                if (!personaId) {
+                    return;
+                }
 
-window.eliminarRegistro =
-    eliminarRegistro;
+                if (
+                    !window.HLBPSession?.profile
+                ) {
+                    return;
+                }
 
-window.volverAdministrazioa =
-    volverAdministrazioa;
+                if (
+                    !window.HLBPSession.isAdminOrMaster()
+                ) {
+                    return;
+                }
+
+                await cargarPersona(
+                    personaId
+                );
+
+            },
+            100
+        );
+    }
+);
