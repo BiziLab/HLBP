@@ -1,0 +1,21 @@
+:root {
+
+    --hlbp-primary: #851976;
+    --hlbp-primary-dark: #68125d;
+    --hlbp-secondary: #c33aae;
+
+    --hlbp-background: #f6f7f9;
+    --hlbp-white: #ffffff;
+
+    --hlbp-text: #333333;
+    --hlbp-text-light: #666666;
+
+    --hlbp-border: #dddddd;
+
+    --hlbp-danger: #c0392b;
+
+    --hlbp-radius: 12px;
+
+    --hlbp-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.08);
+}
