@@ -1,0 +1,643 @@
+/* ============================================================
+   HLBP - ERREGISTROA
+   ============================================================ */
+
+.erregistroa-page {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+
+/* ============================================================
+   CABECERA
+   ============================================================ */
+
+.erregistroa-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 30px;
+
+    margin-bottom: 28px;
+}
+
+.erregistroa-header-content {
+    min-width: 0;
+}
+
+.erregistroa-title {
+    margin: 0;
+
+    font-size: 30px;
+    font-weight: 750;
+    line-height: 1.2;
+
+    color: #202938;
+}
+
+.erregistroa-subtitle {
+    margin: 8px 0 0;
+
+    color: #6b7280;
+
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.erregistroa-header-badge {
+    flex-shrink: 0;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 9px 14px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+
+    background: #ffffff;
+
+    color: #4b5563;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.erregistroa-header-badge::before {
+    content: "";
+
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.10);
+}
+
+
+/* ============================================================
+   ALERTAS
+   ============================================================ */
+
+.erregistroa-alert {
+    display: none;
+
+    align-items: flex-start;
+    gap: 12px;
+
+    margin-bottom: 22px;
+    padding: 15px 17px;
+
+    border-radius: 12px;
+
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.erregistroa-alert.show {
+    display: flex;
+}
+
+.erregistroa-alert.success {
+    border: 1px solid #bbf7d0;
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.erregistroa-alert.error {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.erregistroa-alert.warning {
+    border: 1px solid #fde68a;
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.erregistroa-alert-icon {
+    flex-shrink: 0;
+
+    width: 22px;
+    height: 22px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-weight: 800;
+}
+
+
+/* ============================================================
+   CARD PRINCIPAL
+   ============================================================ */
+
+.erregistroa-card {
+    overflow: hidden;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 10px 30px rgba(15, 23, 42, 0.05),
+        0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+
+/* ============================================================
+   CARD HEADER
+   ============================================================ */
+
+.erregistroa-card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    padding: 22px 26px;
+
+    border-bottom: 1px solid #edf0f3;
+
+    background:
+        linear-gradient(
+            135deg,
+            #ffffff 0%,
+            #fafbfc 100%
+        );
+}
+
+.erregistroa-card-icon {
+    width: 44px;
+    height: 44px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background: #f3e8f2;
+
+    color: #851976;
+
+    font-size: 21px;
+}
+
+.erregistroa-card-header h2 {
+    margin: 0;
+
+    color: #202938;
+
+    font-size: 18px;
+    font-weight: 750;
+}
+
+.erregistroa-card-header p {
+    margin: 4px 0 0;
+
+    color: #6b7280;
+
+    font-size: 13px;
+}
+
+
+/* ============================================================
+   FORMULARIO
+   ============================================================ */
+
+.erregistroa-form {
+    padding: 28px;
+}
+
+.erregistroa-section {
+    margin-bottom: 30px;
+}
+
+.erregistroa-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.erregistroa-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin: 0 0 18px;
+
+    color: #374151;
+
+    font-size: 15px;
+    font-weight: 750;
+}
+
+.erregistroa-section-title::before {
+    content: "";
+
+    width: 4px;
+    height: 18px;
+
+    border-radius: 999px;
+
+    background: #851976;
+}
+
+.erregistroa-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 20px;
+}
+
+.erregistroa-grid-full {
+    grid-column: 1 / -1;
+}
+
+
+/* ============================================================
+   FORM GROUP
+   ============================================================ */
+
+.erregistroa-field {
+    min-width: 0;
+}
+
+.erregistroa-field label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #374151;
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.erregistroa-required {
+    color: #b42318;
+}
+
+.erregistroa-help {
+    display: block;
+
+    margin-top: 6px;
+
+    color: #8a93a2;
+
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+
+.erregistroa-field input,
+.erregistroa-field select,
+.erregistroa-field textarea {
+    width: 100%;
+
+    box-sizing: border-box;
+
+    border: 1px solid #d8dde5;
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    color: #1f2937;
+
+    font-family: inherit;
+    font-size: 14px;
+
+    outline: none;
+
+    transition:
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        background 0.18s ease;
+}
+
+.erregistroa-field input,
+.erregistroa-field select {
+    height: 46px;
+
+    padding: 0 13px;
+}
+
+.erregistroa-field textarea {
+    min-height: 100px;
+
+    padding: 12px 13px;
+
+    resize: vertical;
+
+    line-height: 1.55;
+}
+
+.erregistroa-field input::placeholder,
+.erregistroa-field textarea::placeholder {
+    color: #a0a7b2;
+}
+
+.erregistroa-field input:hover,
+.erregistroa-field select:hover,
+.erregistroa-field textarea:hover {
+    border-color: #b8bec8;
+}
+
+.erregistroa-field input:focus,
+.erregistroa-field select:focus,
+.erregistroa-field textarea:focus {
+    border-color: #851976;
+
+    box-shadow:
+        0 0 0 3px rgba(133, 25, 118, 0.10);
+}
+
+.erregistroa-field input[readonly] {
+    background: #f8fafc;
+
+    color: #4b5563;
+
+    cursor: default;
+}
+
+
+/* ============================================================
+   CAMPOS DINÁMICOS
+   ============================================================ */
+
+.erregistroa-dynamic {
+    display: none;
+}
+
+.erregistroa-dynamic.visible {
+    display: block;
+}
+
+.erregistroa-dynamic-wide {
+    grid-column: 1 / -1;
+}
+
+
+/* ============================================================
+   INFO BOX
+   ============================================================ */
+
+.erregistroa-info {
+    display: flex;
+    gap: 12px;
+
+    margin-top: 24px;
+    padding: 15px 17px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+
+    background: #f8fafc;
+}
+
+.erregistroa-info-icon {
+    flex-shrink: 0;
+
+    width: 28px;
+    height: 28px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 8px;
+
+    background: #ede9fe;
+
+    color: #6d28d9;
+
+    font-size: 14px;
+}
+
+.erregistroa-info p {
+    margin: 0;
+
+    color: #596273;
+
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+
+/* ============================================================
+   BOTONES
+   ============================================================ */
+
+.erregistroa-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 11px;
+
+    margin-top: 30px;
+    padding-top: 24px;
+
+    border-top: 1px solid #edf0f3;
+}
+
+.erregistroa-btn {
+    min-height: 44px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    padding: 0 18px;
+
+    border: 1px solid transparent;
+    border-radius: 10px;
+
+    font-family: inherit;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.erregistroa-btn:hover {
+    transform: translateY(-1px);
+}
+
+.erregistroa-btn:active {
+    transform: translateY(0);
+}
+
+.erregistroa-btn:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+    transform: none;
+}
+
+.erregistroa-btn-primary {
+    background: #851976;
+
+    color: #ffffff;
+
+    box-shadow:
+        0 5px 14px rgba(133, 25, 118, 0.18);
+}
+
+.erregistroa-btn-primary:hover {
+    background: #731568;
+
+    box-shadow:
+        0 7px 18px rgba(133, 25, 118, 0.23);
+}
+
+.erregistroa-btn-secondary {
+    border-color: #d8dde5;
+
+    background: #ffffff;
+
+    color: #4b5563;
+}
+
+.erregistroa-btn-secondary:hover {
+    border-color: #c5cad2;
+
+    background: #f8fafc;
+}
+
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+
+.erregistroa-loading {
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 9px;
+}
+
+.erregistroa-loading.show {
+    display: inline-flex;
+}
+
+.erregistroa-spinner {
+    width: 15px;
+    height: 15px;
+
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+
+    border-radius: 50%;
+
+    animation: erregistroa-spin 0.7s linear infinite;
+}
+
+@keyframes erregistroa-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 800px) {
+
+    .erregistroa-header {
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 15px;
+    }
+
+    .erregistroa-header-badge {
+        align-self: flex-start;
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    .erregistroa-title {
+        font-size: 25px;
+    }
+
+    .erregistroa-form {
+        padding: 20px;
+    }
+
+    .erregistroa-card-header {
+        padding: 19px 20px;
+    }
+
+    .erregistroa-grid {
+        grid-template-columns: 1fr;
+
+        gap: 17px;
+    }
+
+    .erregistroa-grid-full {
+        grid-column: auto;
+    }
+
+    .erregistroa-dynamic-wide {
+        grid-column: auto;
+    }
+
+    .erregistroa-actions {
+        flex-direction: column-reverse;
+
+        align-items: stretch;
+    }
+
+    .erregistroa-btn {
+        width: 100%;
+    }
+
+}
+
+
+@media (max-width: 430px) {
+
+    .erregistroa-form {
+        padding: 16px;
+    }
+
+    .erregistroa-card-header {
+        padding: 17px 16px;
+    }
+
+    .erregistroa-card-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+}
