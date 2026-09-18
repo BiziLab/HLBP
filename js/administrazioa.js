@@ -2,8 +2,8 @@
 // HLBP - ADMINISTRAZIOA
 // ============================================================
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await iniciarAdministrazioa();
+document.addEventListener("DOMContentLoaded", () => {
+    iniciarAdministrazioa();
 });
 
 
@@ -17,6 +17,10 @@ async function iniciarAdministrazioa() {
 
         console.log("HLBP Administrazioa: iniciando...");
 
+        // ----------------------------------------------------
+        // SESIÓN
+        // ----------------------------------------------------
+
         const sesionOk =
             await window.HLBPSession.init();
 
@@ -27,7 +31,6 @@ async function iniciarAdministrazioa() {
             );
 
             window.location.replace("../index.html");
-
             return;
         }
 
@@ -76,6 +79,7 @@ async function iniciarAdministrazioa() {
             throw new Error(
                 "No se encontró #pageContent después de cargar el layout."
             );
+
         }
 
 
@@ -85,7 +89,7 @@ async function iniciarAdministrazioa() {
 
 
         // ----------------------------------------------------
-        // PERSONA INDIVIDUAL O LISTADO GENERAL
+        // ¿FICHA INDIVIDUAL?
         // ----------------------------------------------------
 
         const parametros =
@@ -104,12 +108,15 @@ async function iniciarAdministrazioa() {
                 personaId
             );
 
-        } else {
-
-            await renderAdministrazioa();
-
+            return;
         }
 
+
+        // ----------------------------------------------------
+        // LISTADO GENERAL
+        // ----------------------------------------------------
+
+        await renderAdministrazioa();
 
     } catch (error) {
 
@@ -142,6 +149,7 @@ async function renderAdministrazioa() {
         throw new Error(
             "No existe #pageContent."
         );
+
     }
 
 
@@ -247,9 +255,7 @@ async function cargarListadoAholkulariak() {
         );
 
 
-    if (!container) {
-        return;
-    }
+    if (!container) return;
 
 
     container.innerHTML = `
@@ -319,8 +325,8 @@ async function cargarListadoAholkulariak() {
         // ----------------------------------------------------
         // REGISTROS
         //
-        // IMPORTANTE:
-        // La columna real es aholkulari_id
+        // ESQUEMA REAL:
+        // registros.aholkulari_id
         // ----------------------------------------------------
 
         const {
@@ -341,7 +347,7 @@ async function cargarListadoAholkulariak() {
 
 
         // ----------------------------------------------------
-        // RELACIONES AHOLKULARIA -> CENTRO
+        // RELACIONES AHOLKULARIA - CENTRO
         // ----------------------------------------------------
 
         const {
@@ -349,7 +355,9 @@ async function cargarListadoAholkulariak() {
             error: relacionesError
         } =
             await window.hlbpSupabase
-                .from("aholkulari_centros")
+                .from(
+                    "aholkulari_centros"
+                )
                 .select(`
                     id,
                     aholkulari_id,
@@ -364,6 +372,16 @@ async function cargarListadoAholkulariak() {
 
         // ----------------------------------------------------
         // CENTROS
+        //
+        // ESQUEMA REAL:
+        // id
+        // codigo
+        // nombre
+        // activo
+        //
+        // NO existen:
+        // municipio
+        // zona
         // ----------------------------------------------------
 
         const {
@@ -376,8 +394,6 @@ async function cargarListadoAholkulariak() {
                     id,
                     codigo,
                     nombre,
-                    municipio,
-                    zona,
                     activo
                 `)
                 .order(
@@ -408,6 +424,7 @@ async function cargarListadoAholkulariak() {
                     String(centro.id),
                     centro
                 );
+
             }
         );
 
@@ -426,28 +443,31 @@ async function cargarListadoAholkulariak() {
                         );
 
 
+                    // Registros de esta persona
                     const registrosPersona =
-                        (registros || [])
-                            .filter(
-                                registro =>
-                                    String(
-                                        registro.aholkulari_id
-                                    ) ===
-                                    personaId
-                            );
+                        (
+                            registros || []
+                        ).filter(
+                            registro =>
+                                String(
+                                    registro.aholkulari_id
+                                ) === personaId
+                        );
 
 
+                    // Relaciones de centros
                     const relacionesPersona =
-                        (relacionesCentros || [])
-                            .filter(
-                                relacion =>
-                                    String(
-                                        relacion.aholkulari_id
-                                    ) ===
-                                    personaId
-                            );
+                        (
+                            relacionesCentros || []
+                        ).filter(
+                            relacion =>
+                                String(
+                                    relacion.aholkulari_id
+                                ) === personaId
+                        );
 
 
+                    // Centros de la persona
                     const centrosPersona =
                         relacionesPersona
                             .map(
@@ -458,9 +478,7 @@ async function cargarListadoAholkulariak() {
                                         )
                                     )
                             )
-                            .filter(
-                                Boolean
-                            );
+                            .filter(Boolean);
 
 
                     return {
@@ -477,6 +495,7 @@ async function cargarListadoAholkulariak() {
                             centrosPersona
 
                     };
+
                 }
             );
 
@@ -549,9 +568,7 @@ function renderListado(
         );
 
 
-    if (!container) {
-        return;
-    }
+    if (!container) return;
 
 
     const totalPersonas =
@@ -584,9 +601,7 @@ function renderListado(
 
     container.innerHTML = `
 
-        <!-- ========================================= -->
         <!-- RESUMEN -->
-        <!-- ========================================= -->
 
         <div class="admin-summary">
 
@@ -655,9 +670,7 @@ function renderListado(
         </div>
 
 
-        <!-- ========================================= -->
-        <!-- PANEL -->
-        <!-- ========================================= -->
+        <!-- FILTROS -->
 
         <div class="admin-panel">
 
@@ -677,10 +690,6 @@ function renderListado(
 
             </div>
 
-
-            <!-- ========================================= -->
-            <!-- FILTROS -->
-            <!-- ========================================= -->
 
             <div class="admin-filters">
 
@@ -789,19 +798,16 @@ function renderListado(
 
         const texto =
             search?.value
-                ?.trim()
-                .toLowerCase() ||
-            "";
+                .trim()
+                .toLowerCase() || "";
 
 
         const especialidadValue =
-            especialidad?.value ||
-            "";
+            especialidad?.value || "";
 
 
         const berritzeguneValue =
-            berritzegune?.value ||
-            "";
+            berritzegune?.value || "";
 
 
         const filtradas =
@@ -809,22 +815,24 @@ function renderListado(
                 persona => {
 
                     const nombre =
-                        `${persona.nombre || ""} ${persona.apellidos || ""}`
+                        `${
+                            persona.nombre || ""
+                        } ${
+                            persona.apellidos || ""
+                        }`
                             .trim()
                             .toLowerCase();
 
 
                     const codigo =
                         String(
-                            persona.codigo ||
-                            ""
+                            persona.codigo || ""
                         ).toLowerCase();
 
 
                     const email =
                         String(
-                            persona.email ||
-                            ""
+                            persona.email || ""
                         ).toLowerCase();
 
 
@@ -858,6 +866,7 @@ function renderListado(
                         coincideEspecialidad &&
                         coincideBerritzegune
                     );
+
                 }
             );
 
@@ -904,9 +913,7 @@ function renderTablaAholkulariak(
         );
 
 
-    if (!container) {
-        return;
-    }
+    if (!container) return;
 
 
     if (!personas.length) {
@@ -936,145 +943,131 @@ function renderTablaAholkulariak(
 
 
     const rows =
-        personas
-            .map(
-                persona => {
+        personas.map(
+            persona => {
 
-                    const nombre =
-                        `${persona.nombre || ""} ${persona.apellidos || ""}`
-                            .trim() ||
-                        persona.email ||
-                        "—";
-
-
-                    const centros =
-                        persona.centros ||
-                        [];
+                const nombre =
+                    `${
+                        persona.nombre || ""
+                    } ${
+                        persona.apellidos || ""
+                    }`
+                        .trim() ||
+                    persona.email ||
+                    "—";
 
 
-                    const centrosTexto =
-                        centros.length
-                            ? centros
-                                .map(
-                                    centro =>
-                                        centro.codigo ||
-                                        centro.nombre ||
-                                        ""
-                                )
-                                .filter(
-                                    Boolean
-                                )
-                                .join(
-                                    ", "
-                                )
-                            : "—";
+                const centros =
+                    persona.centros || [];
 
 
-                    return `
-
-                        <tr>
-
-                            <td>
-
-                                <strong>
-                                    ${escapeHtml(
-                                        persona.codigo ||
-                                        "—"
-                                    )}
-                                </strong>
-
-                            </td>
+                const centrosTexto =
+                    centros.length
+                        ? centros
+                            .map(
+                                centro =>
+                                    centro.codigo ||
+                                    centro.nombre ||
+                                    ""
+                            )
+                            .filter(Boolean)
+                            .join(", ")
+                        : "—";
 
 
-                            <td>
+                return `
 
-                                <div class="admin-person-name">
+                    <tr>
 
-                                    ${escapeHtml(
-                                        nombre
-                                    )}
-
-                                </div>
-
-
-                                <div class="admin-person-email">
-
-                                    ${escapeHtml(
-                                        persona.email ||
-                                        ""
-                                    )}
-
-                                </div>
-
-                            </td>
-
-
-                            <td>
-
+                        <td>
+                            <strong>
                                 ${escapeHtml(
-                                    persona.berritzegune ||
+                                    persona.codigo ||
                                     "—"
                                 )}
-
-                            </td>
-
-
-                            <td>
-
-                                ${
-                                    persona.espezialitatea
-                                        ? `
-                                            <span class="admin-badge">
-                                                ${escapeHtml(
-                                                    persona.espezialitatea
-                                                )}
-                                            </span>
-                                          `
-                                        : "—"
-                                }
-
-                            </td>
+                            </strong>
+                        </td>
 
 
-                            <td>
+                        <td>
 
+                            <div class="admin-person-name">
                                 ${escapeHtml(
-                                    centrosTexto
+                                    nombre
                                 )}
+                            </div>
 
-                            </td>
+                            <div class="admin-person-email">
+                                ${escapeHtml(
+                                    persona.email ||
+                                    ""
+                                )}
+                            </div>
+
+                        </td>
 
 
-                            <td>
+                        <td>
+                            ${escapeHtml(
+                                persona.berritzegune ||
+                                "—"
+                            )}
+                        </td>
 
-                                <strong>
-                                    ${persona.registrosCount}
-                                </strong>
 
-                            </td>
+                        <td>
+
+                            ${
+                                persona.espezialitatea
+                                    ? `
+                                        <span class="admin-badge">
+                                            ${escapeHtml(
+                                                persona.espezialitatea
+                                            )}
+                                        </span>
+                                      `
+                                    : "—"
+                            }
+
+                        </td>
 
 
-                            <td>
+                        <td>
+                            ${escapeHtml(
+                                centrosTexto
+                            )}
+                        </td>
 
-                                <button
-                                    type="button"
-                                    class="admin-btn admin-btn-small admin-btn-secondary"
-                                    data-persona-id="${escapeHtml(
-                                        persona.id
-                                    )}"
-                                    onclick="abrirPersonaDesdeBoton(this)"
-                                >
-                                    IKUSI
-                                </button>
 
-                            </td>
+                        <td>
 
-                        </tr>
-                    `;
-                }
-            )
-            .join("");
+                            <strong>
+                                ${persona.registrosCount}
+                            </strong>
 
+                        </td>
+
+
+                        <td>
+
+                            <button
+                                type="button"
+                                class="admin-btn admin-btn-small admin-btn-secondary"
+                                data-persona-id="${escapeHtml(
+                                    persona.id
+                                )}"
+                                onclick="abrirPersonaDesdeBoton(this)"
+                            >
+                                IKUSI
+                            </button>
+
+                        </td>
+
+                    </tr>
+                `;
+            }
+        )
+        .join("");
 
 
     container.innerHTML = `
@@ -1086,30 +1079,20 @@ function renderTablaAholkulariak(
                 <thead>
 
                     <tr>
-
                         <th>Kodigoa</th>
-
                         <th>Izena</th>
-
                         <th>Kokapena</th>
-
                         <th>Espezialitatea</th>
-
                         <th>Zentroak</th>
-
                         <th>Erregistroak</th>
-
                         <th>Ekintza</th>
-
                     </tr>
 
                 </thead>
 
 
                 <tbody>
-
                     ${rows}
-
                 </tbody>
 
             </table>
@@ -1128,12 +1111,10 @@ function abrirPersonaDesdeBoton(
 ) {
 
     const id =
-        button?.dataset?.personaId;
+        button.dataset.personaId;
 
 
-    if (!id) {
-        return;
-    }
+    if (!id) return;
 
 
     window.location.href =
@@ -1155,9 +1136,7 @@ function mostrarFormularioNuevoAholkularia() {
         );
 
 
-    if (!pageContent) {
-        return;
-    }
+    if (!pageContent) return;
 
 
     pageContent.innerHTML = `
@@ -1455,22 +1434,19 @@ async function crearAholkularia(
     const nombre =
         document.getElementById(
             "nuevoNombre"
-        )?.value
-            .trim();
+        )?.value.trim();
 
 
     const codigo =
         document.getElementById(
             "nuevoCodigo"
-        )?.value
-            .trim();
+        )?.value.trim();
 
 
     const berritzegune =
         document.getElementById(
             "nuevoBerritzegune"
-        )?.value
-            .trim();
+        )?.value.trim();
 
 
     const espezialitatea =
@@ -1483,19 +1459,19 @@ async function crearAholkularia(
         document.getElementById(
             "nuevoEmail"
         )?.value
-            .trim();
+            .trim()
+            .toLowerCase();
 
 
     const centrosTexto =
         document.getElementById(
             "nuevoCentros"
-        )?.value
-            .trim();
+        )?.value.trim();
 
 
-    // ----------------------------------------------------
+    // --------------------------------------------------------
     // VALIDACIÓN
-    // ----------------------------------------------------
+    // --------------------------------------------------------
 
     if (
         !nombre ||
@@ -1515,9 +1491,9 @@ async function crearAholkularia(
     }
 
 
-    // ----------------------------------------------------
+    // --------------------------------------------------------
     // CENTROS
-    // ----------------------------------------------------
+    // --------------------------------------------------------
 
     const centros =
         centrosTexto
@@ -1527,25 +1503,24 @@ async function crearAholkularia(
                     valor =>
                         valor.trim()
                 )
-                .filter(
-                    Boolean
-                )
+                .filter(Boolean)
             : [];
 
 
-    // ----------------------------------------------------
+    // --------------------------------------------------------
     // BOTÓN
-    // ----------------------------------------------------
+    // --------------------------------------------------------
 
-    button.disabled = true;
+    if (button) {
 
+        button.disabled = true;
 
-    button.dataset.originalText =
-        button.textContent;
+        button.dataset.originalText =
+            button.textContent;
 
-
-    button.textContent =
-        "Sortzen...";
+        button.textContent =
+            "Sortzen...";
+    }
 
 
     mostrarFormularioMensaje(
@@ -1562,30 +1537,32 @@ async function crearAholkularia(
         );
 
 
+        // ----------------------------------------------------
+        // INVOCAR EDGE FUNCTION
+        // ----------------------------------------------------
+
         const {
             data,
             error
         } =
-            await window.hlbpSupabase
-                .functions
-                .invoke(
-                    "create-aholkularia",
-                    {
-                        body: {
-                            nombre,
-                            codigo,
-                            berritzegune,
-                            espezialitatea,
-                            email,
-                            centros
-                        }
+            await window.hlbpSupabase.functions.invoke(
+                "create-aholkularia",
+                {
+                    body: {
+                        nombre,
+                        codigo,
+                        berritzegune,
+                        espezialitatea,
+                        email,
+                        centros
                     }
-                );
+                }
+            );
 
 
-        // ------------------------------------------------
-        // ERROR SUPABASE
-        // ------------------------------------------------
+        // ----------------------------------------------------
+        // ERROR EDGE FUNCTION
+        // ----------------------------------------------------
 
         if (error) {
 
@@ -1595,80 +1572,57 @@ async function crearAholkularia(
             );
 
 
-            let detalle =
+            // Intentamos mostrar información más útil.
+            let mensaje =
                 error.message ||
-                "Errorea Edge Function-en.";
+                "Ezin izan da Aholkularia sortu.";
 
 
-            // Intentamos recuperar el body
-            // de un error HTTP de la función.
-
-            try {
-
-                if (
-                    error.context &&
-                    typeof error.context.json ===
-                        "function"
-                ) {
-
-                    const bodyError =
-                        await error.context.json();
-
-
-                    if (
-                        bodyError?.error
-                    ) {
-
-                        detalle =
-                            bodyError.error;
-                    }
-
-                    else if (
-                        bodyError?.message
-                    ) {
-
-                        detalle =
-                            bodyError.message;
-                    }
-                }
-
-            } catch (
-                lecturaError
+            if (
+                error.context?.body
             ) {
 
-                console.warn(
-                    "No se pudo leer el detalle de Edge Function:",
-                    lecturaError
-                );
+                try {
+
+                    const body =
+                        typeof error.context.body ===
+                            "string"
+                            ? JSON.parse(
+                                error.context.body
+                            )
+                            : error.context.body;
+
+
+                    if (body?.error) {
+                        mensaje =
+                            body.error;
+                    }
+
+                } catch {
+                    // Ignorar si no es JSON.
+                }
+
             }
 
 
             throw new Error(
-                detalle
+                mensaje
             );
         }
 
 
-        // ------------------------------------------------
-        // RESPUESTA VACÍA
-        // ------------------------------------------------
+        // ----------------------------------------------------
+        // COMPROBAR RESPUESTA
+        // ----------------------------------------------------
 
-        if (!data) {
-
-            throw new Error(
-                "Edge Function-ek ez du erantzunik itzuli."
-            );
-        }
-
-
-        // ------------------------------------------------
-        // ERROR DEVUELTO POR FUNCIÓN
-        // ------------------------------------------------
-
-        if (data.error) {
+        if (
+            !data ||
+            data.success !== true
+        ) {
 
             throw new Error(
-                data.error
+                data?.error ||
+                "Ezin izan da Aholkularia sortu."
             );
         }
 
@@ -1679,9 +1633,13 @@ async function crearAholkularia(
         );
 
 
+        // ----------------------------------------------------
+        // ÉXITO
+        // ----------------------------------------------------
+
         mostrarFormularioMensaje(
             message,
-            "Aholkularia behar bezala sortu da.",
+            "Aholkularia behar bezala sortu da. Gonbidapena bidali da.",
             "success"
         );
 
@@ -1693,17 +1651,13 @@ async function crearAholkularia(
             ?.reset();
 
 
-        // ------------------------------------------------
-        // VOLVER AL LISTADO
-        // ------------------------------------------------
-
         setTimeout(
             () => {
 
                 cargarListadoAholkulariak();
 
             },
-            1200
+            1500
         );
 
 
@@ -1724,13 +1678,15 @@ async function crearAholkularia(
         );
 
 
-        button.disabled =
-            false;
+        if (button) {
 
+            button.disabled =
+                false;
 
-        button.textContent =
-            button.dataset.originalText ||
-            "➕ Gehitu Aholkularia";
+            button.textContent =
+                button.dataset.originalText ||
+                "➕ Gehitu Aholkularia";
+        }
     }
 }
 
@@ -1749,9 +1705,7 @@ async function cargarPersona(
         );
 
 
-    if (!pageContent) {
-        return;
-    }
+    if (!pageContent) return;
 
 
     pageContent.innerHTML = `
@@ -1771,7 +1725,7 @@ async function cargarPersona(
     try {
 
         // ----------------------------------------------------
-        // PERFIL
+        // PERSONA
         // ----------------------------------------------------
 
         const {
@@ -1808,13 +1762,16 @@ async function cargarPersona(
             throw new Error(
                 "Ez da Aholkularia aurkitu."
             );
+
         }
 
 
         // ----------------------------------------------------
         // REGISTROS
         //
-        // Campos reales de PostgreSQL
+        // ESQUEMA REAL:
+        // aholkulari_id
+        // estudiante_id
         // ----------------------------------------------------
 
         const {
@@ -1826,18 +1783,17 @@ async function cargarPersona(
                 .select(`
                     id,
                     aholkulari_id,
+                    fecha,
+                    fecha_fin,
                     centro_id,
                     tarea,
                     tipo,
                     subtipo,
                     estudiante_id,
                     zehaztu,
-                    fecha,
-                    fecha_fin,
                     estado,
                     observaciones,
-                    created_at,
-                    updated_at
+                    created_at
                 `)
                 .eq(
                     "aholkulari_id",
@@ -1865,7 +1821,9 @@ async function cargarPersona(
             error: relacionesError
         } =
             await window.hlbpSupabase
-                .from("aholkulari_centros")
+                .from(
+                    "aholkulari_centros"
+                )
                 .select(`
                     id,
                     aholkulari_id,
@@ -1887,13 +1845,22 @@ async function cargarPersona(
                 .map(
                     relacion =>
                         relacion.centro_id
+                )
+                .filter(
+                    id =>
+                        id !== null &&
+                        id !== undefined
                 );
 
 
         let centros = [];
 
 
-        if (centroIds.length) {
+        // ----------------------------------------------------
+        // CENTROS
+        // ----------------------------------------------------
+
+        if (centroIds.length > 0) {
 
             const {
                 data,
@@ -1905,8 +1872,6 @@ async function cargarPersona(
                         id,
                         codigo,
                         nombre,
-                        municipio,
-                        zona,
                         activo
                     `)
                     .in(
@@ -2007,13 +1972,15 @@ function renderPersona(
         );
 
 
-    if (!pageContent) {
-        return;
-    }
+    if (!pageContent) return;
 
 
     const nombre =
-        `${persona.nombre || ""} ${persona.apellidos || ""}`
+        `${
+            persona.nombre || ""
+        } ${
+            persona.apellidos || ""
+        }`
             .trim() ||
         persona.email ||
         "Aholkularia";
@@ -2029,12 +1996,16 @@ function renderPersona(
 
                     <div class="admin-breadcrumb">
                         HLBP / Administrazioa /
-                        ${escapeHtml(nombre)}
+                        ${escapeHtml(
+                            nombre
+                        )}
                     </div>
 
 
                     <h1>
-                        ${escapeHtml(nombre)}
+                        ${escapeHtml(
+                            nombre
+                        )}
                     </h1>
 
 
@@ -2070,9 +2041,7 @@ function renderPersona(
             </div>
 
 
-            <!-- ========================================= -->
             <!-- DATOS PERSONA -->
-            <!-- ========================================= -->
 
             <div class="admin-panel">
 
@@ -2090,6 +2059,7 @@ function renderPersona(
 
 
                 <div class="person-info-grid">
+
 
                     <div class="person-info-item">
 
@@ -2185,8 +2155,6 @@ function renderPersona(
                 </div>
 
 
-                <!-- CENTROS -->
-
                 <div class="person-centers">
 
                     <h3>
@@ -2197,7 +2165,6 @@ function renderPersona(
                     ${
                         centros.length
                             ? `
-
                                 <div class="person-center-list">
 
                                     ${centros
@@ -2213,20 +2180,16 @@ function renderPersona(
                                                     )}
 
                                                 </span>
-
                                             `
                                         )
                                         .join("")}
 
                                 </div>
-
                               `
                             : `
-
                                 <p class="admin-muted">
                                     Ez dago zentrorik esleituta.
                                 </p>
-
                               `
                     }
 
@@ -2235,9 +2198,7 @@ function renderPersona(
             </div>
 
 
-            <!-- ========================================= -->
             <!-- REGISTROS -->
-            <!-- ========================================= -->
 
             <div class="admin-panel">
 
@@ -2249,13 +2210,12 @@ function renderPersona(
                             Erregistroak
                         </h2>
 
-                        <p>
 
+                        <p>
                             Guztira:
                             <strong>
                                 ${registros.length}
                             </strong>
-
                         </p>
 
                     </div>
@@ -2277,6 +2237,10 @@ function renderPersona(
     `;
 
 
+    // --------------------------------------------------------
+    // GUARDAR ESTADO
+    // --------------------------------------------------------
+
     window.HLBPAdminPersona = {
 
         persona,
@@ -2284,7 +2248,6 @@ function renderPersona(
         registros,
 
         centros
-
     };
 
 
@@ -2306,7 +2269,6 @@ function renderFiltrosRegistros() {
     return `
 
         <div class="admin-filters admin-record-filters">
-
 
             <div class="admin-filter-group">
 
@@ -2364,7 +2326,7 @@ function renderFiltrosRegistros() {
                     type="text"
                     id="recordCentro"
                     class="admin-input"
-                    placeholder="Zentroa..."
+                    placeholder="Kodea edo zentroa..."
                 >
 
             </div>
@@ -2486,9 +2448,7 @@ function inicializarFiltrosRegistros() {
                 );
 
 
-            if (!elemento) {
-                return;
-            }
+            if (!elemento) return;
 
 
             elemento.addEventListener(
@@ -2508,86 +2468,127 @@ function inicializarFiltrosRegistros() {
 
 
 // ============================================================
-// APLICAR FILTROS
+// APLICAR FILTROS REGISTROS
 // ============================================================
 
 function aplicarFiltrosRegistros() {
 
     const registros =
         window.HLBPAdminPersona
-            ?.registros ||
-        [];
+            ?.registros || [];
+
+
+    const centros =
+        window.HLBPAdminPersona
+            ?.centros || [];
 
 
     const texto =
         document.getElementById(
             "recordSearch"
         )?.value
-            ?.trim()
-            .toLowerCase() ||
-        "";
+            .trim()
+            .toLowerCase() || "";
 
 
     const fechaDesde =
         document.getElementById(
             "recordFechaDesde"
-        )?.value ||
-        "";
+        )?.value || "";
 
 
     const fechaHasta =
         document.getElementById(
             "recordFechaHasta"
-        )?.value ||
-        "";
+        )?.value || "";
 
 
     const centro =
         document.getElementById(
             "recordCentro"
         )?.value
-            ?.trim()
-            .toLowerCase() ||
-        "";
+            .trim()
+            .toLowerCase() || "";
 
 
     const tarea =
         document.getElementById(
             "recordTarea"
         )?.value
-            ?.trim()
-            .toLowerCase() ||
-        "";
+            .trim()
+            .toLowerCase() || "";
 
 
     const tipo =
         document.getElementById(
             "recordTipo"
         )?.value
-            ?.trim()
-            .toLowerCase() ||
-        "";
+            .trim()
+            .toLowerCase() || "";
 
 
     const subtipo =
         document.getElementById(
             "recordSubtipo"
         )?.value
-            ?.trim()
-            .toLowerCase() ||
-        "";
+            .trim()
+            .toLowerCase() || "";
 
 
     const estado =
         document.getElementById(
             "recordEstado"
-        )?.value ||
-        "";
+        )?.value || "";
 
+
+    // --------------------------------------------------------
+    // MAPA CENTROS
+    // --------------------------------------------------------
+
+    const centrosMap =
+        new Map();
+
+
+    centros.forEach(
+        item => {
+
+            centrosMap.set(
+                String(item.id),
+                item
+            );
+
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // FILTRAR
+    // --------------------------------------------------------
 
     const filtrados =
         registros.filter(
             registro => {
+
+                const centroRegistro =
+                    centrosMap.get(
+                        String(
+                            registro.centro_id
+                        )
+                    );
+
+
+                const centroTexto =
+                    centroRegistro
+                        ? `${
+                            centroRegistro.codigo || ""
+                        } ${
+                            centroRegistro.nombre || ""
+                        }`
+                            .toLowerCase()
+                        : String(
+                            registro.centro_id || ""
+                        ).toLowerCase();
+
 
                 const valoresTexto = [
 
@@ -2607,14 +2608,15 @@ function aplicarFiltrosRegistros() {
 
                     registro.estado,
 
-                    registro.observaciones
+                    registro.observaciones,
+
+                    centroTexto
 
                 ]
                     .map(
                         valor =>
                             String(
-                                valor ||
-                                ""
+                                valor || ""
                             ).toLowerCase()
                     )
                     .join(" ");
@@ -2628,8 +2630,7 @@ function aplicarFiltrosRegistros() {
 
 
                 const fecha =
-                    registro.fecha ||
-                    "";
+                    registro.fecha || "";
 
 
                 const coincideDesde =
@@ -2644,21 +2645,15 @@ function aplicarFiltrosRegistros() {
 
                 const coincideCentro =
                     !centro ||
-                    String(
-                        registro.centro_id ||
-                        ""
-                    )
-                        .toLowerCase()
-                        .includes(
-                            centro
-                        );
+                    centroTexto.includes(
+                        centro
+                    );
 
 
                 const coincideTarea =
                     !tarea ||
                     String(
-                        registro.tarea ||
-                        ""
+                        registro.tarea || ""
                     )
                         .toLowerCase()
                         .includes(
@@ -2669,8 +2664,7 @@ function aplicarFiltrosRegistros() {
                 const coincideTipo =
                     !tipo ||
                     String(
-                        registro.tipo ||
-                        ""
+                        registro.tipo || ""
                     )
                         .toLowerCase()
                         .includes(
@@ -2681,8 +2675,7 @@ function aplicarFiltrosRegistros() {
                 const coincideSubtipo =
                     !subtipo ||
                     String(
-                        registro.subtipo ||
-                        ""
+                        registro.subtipo || ""
                     )
                         .toLowerCase()
                         .includes(
@@ -2715,6 +2708,7 @@ function aplicarFiltrosRegistros() {
                     coincideEstado
 
                 );
+
             }
         );
 
@@ -2739,9 +2733,7 @@ function renderTablaRegistros(
         );
 
 
-    if (!container) {
-        return;
-    }
+    if (!container) return;
 
 
     if (!registros.length) {
@@ -2772,106 +2764,138 @@ function renderTablaRegistros(
     }
 
 
+    const centros =
+        window.HLBPAdminPersona
+            ?.centros || [];
+
+
+    const centrosMap =
+        new Map();
+
+
+    centros.forEach(
+        centro => {
+
+            centrosMap.set(
+                String(centro.id),
+                centro
+            );
+
+        }
+    );
+
+
     const rows =
-        registros
-            .map(
-                registro => {
+        registros.map(
+            registro => {
 
-                    const estadoClass =
-                        registro.estado ===
-                            "Eginda"
-                            ? "admin-status-success"
-                            : "admin-status-pending";
+                const estadoClass =
+                    registro.estado ===
+                        "Eginda"
+                        ? "admin-status-success"
+                        : "admin-status-pending";
 
 
-                    return `
+                const centro =
+                    centrosMap.get(
+                        String(
+                            registro.centro_id
+                        )
+                    );
 
-                        <tr>
 
-                            <td>
+                const centroTexto =
+                    centro
+                        ? (
+                            centro.codigo ||
+                            centro.nombre ||
+                            "—"
+                        )
+                        : (
+                            registro.centro_id ||
+                            "—"
+                        );
 
+
+                return `
+
+                    <tr>
+
+                        <td>
+                            ${escapeHtml(
+                                formatearFecha(
+                                    registro.fecha
+                                )
+                            )}
+                        </td>
+
+
+                        <td>
+                            ${escapeHtml(
+                                registro.tarea ||
+                                "—"
+                            )}
+                        </td>
+
+
+                        <td>
+                            ${escapeHtml(
+                                registro.tipo ||
+                                "—"
+                            )}
+                        </td>
+
+
+                        <td>
+                            ${escapeHtml(
+                                registro.subtipo ||
+                                "—"
+                            )}
+                        </td>
+
+
+                        <td>
+                            ${escapeHtml(
+                                registro.estudiante_id ||
+                                "—"
+                            )}
+                        </td>
+
+
+                        <td>
+
+                            <span
+                                class="${estadoClass}"
+                            >
                                 ${escapeHtml(
-                                    formatearFecha(
-                                        registro.fecha
-                                    )
-                                )}
-
-                            </td>
-
-
-                            <td>
-
-                                ${escapeHtml(
-                                    registro.tarea ||
+                                    registro.estado ||
                                     "—"
                                 )}
+                            </span>
 
-                            </td>
-
-
-                            <td>
-
-                                ${escapeHtml(
-                                    registro.tipo ||
-                                    "—"
-                                )}
-
-                            </td>
+                        </td>
 
 
-                            <td>
+                        <td>
 
-                                ${escapeHtml(
-                                    registro.subtipo ||
-                                    "—"
-                                )}
+                            <button
+                                type="button"
+                                class="admin-btn admin-btn-small admin-btn-danger"
+                                data-record-id="${escapeHtml(
+                                    registro.id
+                                )}"
+                                onclick="eliminarRegistroDesdeBoton(this)"
+                            >
+                                EZABATU
+                            </button>
 
-                            </td>
+                        </td>
 
-
-                            <td>
-
-                                ${escapeHtml(
-                                    registro.estudiante_id ||
-                                    "—"
-                                )}
-
-                            </td>
-
-
-                            <td>
-
-                                <span class="${estadoClass}">
-
-                                    ${escapeHtml(
-                                        registro.estado ||
-                                        "—"
-                                    )}
-
-                                </span>
-
-                            </td>
-
-
-                            <td>
-
-                                <button
-                                    type="button"
-                                    class="admin-btn admin-btn-small admin-btn-danger"
-                                    onclick="eliminarRegistro('${escapeHtml(
-                                        registro.id
-                                    )}')"
-                                >
-                                    EZABATU
-                                </button>
-
-                            </td>
-
-                        </tr>
-                    `;
-                }
-            )
-            .join("");
+                    </tr>
+                `;
+            }
+        )
+        .join("");
 
 
     container.innerHTML = `
@@ -2918,15 +2942,34 @@ function renderTablaRegistros(
 
 
                 <tbody>
-
                     ${rows}
-
                 </tbody>
 
             </table>
 
         </div>
     `;
+}
+
+
+// ============================================================
+// BOTÓN ELIMINAR
+// ============================================================
+
+function eliminarRegistroDesdeBoton(
+    button
+) {
+
+    const id =
+        button.dataset.recordId;
+
+
+    if (!id) return;
+
+
+    eliminarRegistro(
+        id
+    );
 }
 
 
@@ -2938,9 +2981,7 @@ async function eliminarRegistro(
     id
 ) {
 
-    if (!id) {
-        return;
-    }
+    if (!id) return;
 
 
     const confirmar =
@@ -2973,15 +3014,23 @@ async function eliminarRegistro(
         }
 
 
-        window.HLBPAdminPersona.registros =
-            window.HLBPAdminPersona.registros
-                .filter(
-                    registro =>
-                        String(
-                            registro.id
-                        ) !==
-                        String(id)
-                );
+        if (
+            window.HLBPAdminPersona
+        ) {
+
+            window.HLBPAdminPersona.registros =
+                window.HLBPAdminPersona.registros
+                    .filter(
+                        registro =>
+                            String(
+                                registro.id
+                            ) !==
+                            String(
+                                id
+                            )
+                    );
+
+        }
 
 
         aplicarFiltrosRegistros();
@@ -2996,7 +3045,9 @@ async function eliminarRegistro(
 
 
         alert(
-            "Ezin izan da erregistroa ezabatu."
+            obtenerMensajeError(
+                error
+            )
         );
     }
 }
@@ -3010,17 +3061,7 @@ async function descargarExcelGlobal() {
 
     try {
 
-        if (
-            typeof XLSX ===
-            "undefined"
-        ) {
-
-            alert(
-                "Excel esportatzeko liburutegia ez dago kargatuta."
-            );
-
-            return;
-        }
+        await asegurarXLSX();
 
 
         // ----------------------------------------------------
@@ -3029,7 +3070,7 @@ async function descargarExcelGlobal() {
 
         const {
             data: registros,
-            error
+            error: registrosError
         } =
             await window.hlbpSupabase
                 .from("registros")
@@ -3046,8 +3087,7 @@ async function descargarExcelGlobal() {
                     fecha_fin,
                     estado,
                     observaciones,
-                    created_at,
-                    updated_at
+                    created_at
                 `)
                 .order(
                     "fecha",
@@ -3057,8 +3097,8 @@ async function descargarExcelGlobal() {
                 );
 
 
-        if (error) {
-            throw error;
+        if (registrosError) {
+            throw registrosError;
         }
 
 
@@ -3102,8 +3142,7 @@ async function descargarExcelGlobal() {
                     id,
                     codigo,
                     nombre,
-                    municipio,
-                    zona
+                    activo
                 `);
 
 
@@ -3113,44 +3152,42 @@ async function descargarExcelGlobal() {
 
 
         // ----------------------------------------------------
-        // MAPA PERFILES
+        // MAPAS
         // ----------------------------------------------------
 
         const perfilesMap =
             new Map(
-                (perfiles || [])
-                    .map(
-                        perfil => [
+                (
+                    perfiles || []
+                ).map(
+                    perfil => [
 
-                            String(
-                                perfil.id
-                            ),
+                        String(
+                            perfil.id
+                        ),
 
-                            perfil
+                        perfil
 
-                        ]
-                    )
+                    ]
+                )
             );
 
 
-        // ----------------------------------------------------
-        // MAPA CENTROS
-        // ----------------------------------------------------
-
         const centrosMap =
             new Map(
-                (centros || [])
-                    .map(
-                        centro => [
+                (
+                    centros || []
+                ).map(
+                    centro => [
 
-                            String(
-                                centro.id
-                            ),
+                        String(
+                            centro.id
+                        ),
 
-                            centro
+                        centro
 
-                        ]
-                    )
+                    ]
+                )
             );
 
 
@@ -3159,116 +3196,91 @@ async function descargarExcelGlobal() {
         // ----------------------------------------------------
 
         const filas =
-            (registros || [])
-                .map(
-                    registro => {
+            (
+                registros || []
+            ).map(
+                registro => {
 
-                        const perfil =
-                            perfilesMap.get(
-                                String(
-                                    registro.aholkulari_id
-                                )
-                            ) ||
-                            {};
-
-
-                        const centro =
-                            centrosMap.get(
-                                String(
-                                    registro.centro_id
-                                )
-                            ) ||
-                            {};
+                    const perfil =
+                        perfilesMap.get(
+                            String(
+                                registro.aholkulari_id
+                            )
+                        ) || {};
 
 
-                        return {
+                    const centro =
+                        centrosMap.get(
+                            String(
+                                registro.centro_id
+                            )
+                        ) || {};
 
-                            "Aholkulariaren kodigoa":
-                                perfil.codigo ||
-                                "",
 
-                            "Aholkularia":
-                                `${perfil.nombre || ""} ${perfil.apellidos || ""}`
-                                    .trim(),
+                    return {
 
-                            "Emaila":
-                                perfil.email ||
-                                "",
+                        "Aholkulariaren kodigoa":
+                            perfil.codigo || "",
 
-                            "Berritzegunea":
-                                perfil.berritzegune ||
-                                "",
+                        "Aholkularia":
+                            `${
+                                perfil.nombre || ""
+                            } ${
+                                perfil.apellidos || ""
+                            }`
+                                .trim(),
 
-                            "Espezialitatea":
-                                perfil.espezialitatea ||
-                                "",
+                        "Emaila":
+                            perfil.email || "",
 
-                            "Zentroaren kodigoa":
-                                centro.codigo ||
-                                "",
+                        "Berritzegunea":
+                            perfil.berritzegune || "",
 
-                            "Zentroa":
-                                centro.nombre ||
-                                "",
+                        "Espezialitatea":
+                            perfil.espezialitatea || "",
 
-                            "Udalerria":
-                                centro.municipio ||
-                                "",
+                        "Zentroaren kodigoa":
+                            centro.codigo || "",
 
-                            "Zona":
-                                centro.zona ||
-                                "",
+                        "Zentroa":
+                            centro.nombre || "",
 
-                            "Eginkizuna":
-                                registro.tarea ||
-                                "",
+                        "Eginkizuna":
+                            registro.tarea || "",
 
-                            "Mota":
-                                registro.tipo ||
-                                "",
+                        "Mota":
+                            registro.tipo || "",
 
-                            "Azpi-mota":
-                                registro.subtipo ||
-                                "",
+                        "Azpi-mota":
+                            registro.subtipo || "",
 
-                            "Ikaslearen ID":
-                                registro.estudiante_id ||
-                                "",
+                        "Ikaslearen ID":
+                            registro.estudiante_id || "",
 
-                            "Zehaztu":
-                                registro.zehaztu ||
-                                "",
+                        "Zehaztu":
+                            registro.zehaztu || "",
 
-                            "Egiteko data":
-                                registro.fecha ||
-                                "",
+                        "Egiteko data":
+                            registro.fecha || "",
 
-                            "Amaiera-data":
-                                registro.fecha_fin ||
-                                "",
+                        "Amaiera-data":
+                            registro.fecha_fin || "",
 
-                            "Egoera":
-                                registro.estado ||
-                                "",
+                        "Egoera":
+                            registro.estado || "",
 
-                            "Oharrak":
-                                registro.observaciones ||
-                                "",
+                        "Oharrak":
+                            registro.observaciones || "",
 
-                            "Erregistro ID":
-                                registro.id ||
-                                "",
+                        "Erregistro ID":
+                            registro.id || "",
 
-                            "Sortze data":
-                                registro.created_at ||
-                                "",
+                        "Sortze data":
+                            registro.created_at || ""
 
-                            "Eguneratze data":
-                                registro.updated_at ||
-                                ""
-                        };
-                    }
-                );
+                    };
+                }
+            );
 
 
         // ----------------------------------------------------
@@ -3297,10 +3309,6 @@ async function descargarExcelGlobal() {
 
             { wch: 35 },
 
-            { wch: 20 },
-
-            { wch: 20 },
-
             { wch: 35 },
 
             { wch: 25 },
@@ -3319,11 +3327,7 @@ async function descargarExcelGlobal() {
 
             { wch: 50 },
 
-            { wch: 20 },
-
-            { wch: 25 },
-
-            { wch: 25 }
+            { wch: 38 }
 
         ];
 
@@ -3371,7 +3375,9 @@ async function descargarExcelGlobal() {
 
 
         alert(
-            "Ezin izan da Excel fitxategia sortu."
+            obtenerMensajeError(
+                error
+            )
         );
     }
 }
@@ -3385,17 +3391,7 @@ async function descargarExcelPersona() {
 
     try {
 
-        if (
-            typeof XLSX ===
-            "undefined"
-        ) {
-
-            alert(
-                "Excel esportatzeko liburutegia ez dago kargatuta."
-            );
-
-            return;
-        }
+        await asegurarXLSX();
 
 
         const datos =
@@ -3423,76 +3419,57 @@ async function descargarExcelPersona() {
                 registro => ({
 
                     "Aholkulariaren kodigoa":
-                        persona.codigo ||
-                        "",
+                        persona.codigo || "",
 
                     "Aholkularia":
-                        `${persona.nombre || ""} ${persona.apellidos || ""}`
+                        `${
+                            persona.nombre || ""
+                        } ${
+                            persona.apellidos || ""
+                        }`
                             .trim(),
 
                     "Emaila":
-                        persona.email ||
-                        "",
+                        persona.email || "",
 
                     "Berritzegunea":
-                        persona.berritzegune ||
-                        "",
+                        persona.berritzegune || "",
 
                     "Espezialitatea":
-                        persona.espezialitatea ||
-                        "",
-
-                    "Zentro ID":
-                        registro.centro_id ||
-                        "",
+                        persona.espezialitatea || "",
 
                     "Eginkizuna":
-                        registro.tarea ||
-                        "",
+                        registro.tarea || "",
 
                     "Mota":
-                        registro.tipo ||
-                        "",
+                        registro.tipo || "",
 
                     "Azpi-mota":
-                        registro.subtipo ||
-                        "",
+                        registro.subtipo || "",
 
                     "Ikaslearen ID":
-                        registro.estudiante_id ||
-                        "",
+                        registro.estudiante_id || "",
 
                     "Zehaztu":
-                        registro.zehaztu ||
-                        "",
+                        registro.zehaztu || "",
 
                     "Egiteko data":
-                        registro.fecha ||
-                        "",
+                        registro.fecha || "",
 
                     "Amaiera-data":
-                        registro.fecha_fin ||
-                        "",
+                        registro.fecha_fin || "",
 
                     "Egoera":
-                        registro.estado ||
-                        "",
+                        registro.estado || "",
 
                     "Oharrak":
-                        registro.observaciones ||
-                        "",
+                        registro.observaciones || "",
 
                     "Erregistro ID":
-                        registro.id ||
-                        "",
+                        registro.id || "",
 
                     "Sortze data":
-                        registro.created_at ||
-                        "",
-
-                    "Eguneratze data":
-                        registro.updated_at ||
-                        ""
+                        registro.created_at || ""
 
                 })
             );
@@ -3502,47 +3479,6 @@ async function descargarExcelPersona() {
             XLSX.utils.json_to_sheet(
                 filas
             );
-
-
-        worksheet["!cols"] = [
-
-            { wch: 20 },
-
-            { wch: 28 },
-
-            { wch: 32 },
-
-            { wch: 22 },
-
-            { wch: 20 },
-
-            { wch: 12 },
-
-            { wch: 35 },
-
-            { wch: 25 },
-
-            { wch: 30 },
-
-            { wch: 20 },
-
-            { wch: 30 },
-
-            { wch: 15 },
-
-            { wch: 15 },
-
-            { wch: 15 },
-
-            { wch: 50 },
-
-            { wch: 20 },
-
-            { wch: 25 },
-
-            { wch: 25 }
-
-        ];
 
 
         const workbook =
@@ -3576,9 +3512,62 @@ async function descargarExcelPersona() {
 
 
         alert(
-            "Ezin izan da Excel fitxategia sortu."
+            obtenerMensajeError(
+                error
+            )
         );
     }
+}
+
+
+// ============================================================
+// CARGAR SHEETJS SI NO EXISTE
+// ============================================================
+
+function asegurarXLSX() {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            if (
+                typeof XLSX !==
+                "undefined"
+            ) {
+
+                resolve();
+                return;
+            }
+
+
+            const script =
+                document.createElement(
+                    "script"
+                );
+
+
+            script.src =
+                "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+
+
+            script.onload =
+                () => resolve();
+
+
+            script.onerror =
+                () =>
+                    reject(
+                        new Error(
+                            "Ezin izan da Excel esportatzeko liburutegia kargatu."
+                        )
+                    );
+
+
+            document.head.appendChild(
+                script
+            );
+
+        }
+    );
 }
 
 
@@ -3598,9 +3587,7 @@ function obtenerBerritzeguneOptions(
                         persona =>
                             persona.berritzegune
                     )
-                    .filter(
-                        Boolean
-                    )
+                    .filter(Boolean)
             )
         ]
             .sort(
@@ -3608,12 +3595,8 @@ function obtenerBerritzeguneOptions(
                     a,
                     b
                 ) =>
-                    String(
-                        a
-                    ).localeCompare(
-                        String(
-                            b
-                        )
+                    String(a).localeCompare(
+                        String(b)
                     )
             );
 
@@ -3625,11 +3608,9 @@ function obtenerBerritzeguneOptions(
                 <option value="${escapeHtml(
                     valor
                 )}">
-
                     ${escapeHtml(
                         valor
                     )}
-
                 </option>
             `
         )
@@ -3638,7 +3619,7 @@ function obtenerBerritzeguneOptions(
 
 
 // ============================================================
-// MENSAJES
+// MENSAJE FORMULARIO
 // ============================================================
 
 function mostrarFormularioMensaje(
@@ -3647,9 +3628,7 @@ function mostrarFormularioMensaje(
     tipo
 ) {
 
-    if (!elemento) {
-        return;
-    }
+    if (!elemento) return;
 
 
     elemento.className =
@@ -3675,9 +3654,7 @@ function mostrarErrorAdministrazioa(
         );
 
 
-    if (!app) {
-        return;
-    }
+    if (!app) return;
 
 
     app.innerHTML = `
@@ -3716,7 +3693,7 @@ function mostrarErrorAdministrazioa(
 
 
 // ============================================================
-// UTILIDADES
+// FORMATEAR FECHA
 // ============================================================
 
 function formatearFecha(
@@ -3737,16 +3714,20 @@ function formatearFecha(
 
 
         if (
-            partes.length ===
-            3
+            partes.length === 3
         ) {
 
-            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+            return `${
+                partes[2]
+            }/${
+                partes[1]
+            }/${
+                partes[0]
+            }`;
         }
 
 
         return fecha;
-
 
     } catch {
 
@@ -3756,7 +3737,7 @@ function formatearFecha(
 
 
 // ============================================================
-// MENSAJE DE ERROR
+// OBTENER MENSAJE ERROR
 // ============================================================
 
 function obtenerMensajeError(
@@ -3777,7 +3758,9 @@ function obtenerMensajeError(
     }
 
 
-    if (error.message) {
+    if (
+        error.message
+    ) {
 
         return error.message;
     }
@@ -3791,9 +3774,19 @@ function obtenerMensajeError(
     }
 
 
-    if (error.details) {
+    if (
+        error.details
+    ) {
 
         return error.details;
+    }
+
+
+    if (
+        error.hint
+    ) {
+
+        return error.hint;
     }
 
 
