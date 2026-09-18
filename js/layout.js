@@ -1,79 +1,426 @@
-<!DOCTYPE html>
-<html lang="eu">
+// ============================================================
+// HLBP - Layout principal
+// ============================================================
 
-<head>
+window.HLBPLayout = {
 
-    <meta charset="UTF-8">
+    render() {
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+        const app = document.getElementById("app");
 
-    <title>HLBP - Hasiera</title>
+        if (!app) {
+            console.error("HLBPLayout: no se encontró #app");
+            return;
+        }
 
-    <link
-        rel="stylesheet"
-        href="../css/variables.css"
-    >
+        const nombre = this.escapeHtml(
+            window.HLBPSession?.getName?.() || "Erabiltzailea"
+        );
 
-    <link
-        rel="stylesheet"
-        href="../css/global.css"
-    >
+        const role = this.escapeHtml(
+            window.HLBPSession?.getRoleLabel?.() || ""
+        );
 
-    <link
-        rel="stylesheet"
-        href="../css/layout.css"
-    >
+        const iniciales = this.obtenerIniciales(
+            window.HLBPSession?.getName?.() || "U"
+        );
 
-    <link
-        rel="stylesheet"
-        href="../css/dashboard.css"
-    >
+        const esAdminOMaster =
+            window.HLBPSession?.isAdminOrMaster?.() || false;
 
-</head>
+        const paginaActual = this.obtenerPaginaActual();
 
-<body>
+        app.innerHTML = `
 
-    <div id="app">
+            <div class="app-shell">
 
-        <div class="app-loading">
+                <!-- ==================================================
+                     SIDEBAR
+                     ================================================== -->
 
-            <div class="loading-spinner"></div>
+                <aside class="sidebar" id="sidebar">
 
-            <p>
-                Kargatzen...
-            </p>
+                    <div class="sidebar-header">
 
-        </div>
+                        <a href="dashboard.html" class="sidebar-brand">
 
-    </div>
+                            <div class="sidebar-logo">
+                                HLBP
+                            </div>
+
+                            <div class="sidebar-brand-text">
+                                <strong>HLBP</strong>
+                                <span>Kudeaketa Sistema</span>
+                            </div>
+
+                        </a>
+
+                    </div>
 
 
-    <!-- Supabase -->
-    <script
-        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-    ></script>
+                    <!-- NAVEGACIÓN -->
 
-    <!-- Configuración -->
-    <script src="../js/config.js"></script>
+                    <nav class="sidebar-nav">
 
-    <!-- Supabase -->
-    <script src="../js/supabase.js"></script>
+                        <div class="nav-section-title">
+                            MENU NAGUSIA
+                        </div>
 
-    <!-- Autenticación -->
-    <script src="../js/auth.js"></script>
+                        <a
+                            href="dashboard.html"
+                            class="nav-item ${paginaActual === "dashboard" ? "active" : ""}"
+                        >
+                            <span class="nav-icon">⌂</span>
+                            <span class="nav-label">Hasiera</span>
+                        </a>
 
-    <!-- Sesión -->
-    <script src="../js/session.js"></script>
 
-    <!-- Layout -->
-    <script src="../js/layout.js"></script>
+                        <a
+                            href="erregistroa.html"
+                            class="nav-item ${paginaActual === "erregistroa" ? "active" : ""}"
+                        >
+                            <span class="nav-icon">＋</span>
+                            <span class="nav-label">Erregistroa</span>
+                        </a>
 
-    <!-- Dashboard -->
-    <script src="../js/dashboard.js"></script>
 
-</body>
+                        <a
+                            href="historiala.html"
+                            class="nav-item ${paginaActual === "historiala" ? "active" : ""}"
+                        >
+                            <span class="nav-icon">▤</span>
+                            <span class="nav-label">Historiala</span>
+                        </a>
 
-</html>
+
+                        <a
+                            href="zentroak.html"
+                            class="nav-item ${paginaActual === "zentroak" ? "active" : ""}"
+                        >
+                            <span class="nav-icon">⌂</span>
+                            <span class="nav-label">Zentroak</span>
+                        </a>
+
+
+                        ${
+                            esAdminOMaster
+                                ? `
+                                    <div class="nav-section-title admin-section">
+                                        ADMINISTRAZIOA
+                                    </div>
+
+                                    <a
+                                        href="administrazioa.html"
+                                        class="nav-item ${paginaActual === "administrazioa" ? "active" : ""}"
+                                    >
+                                        <span class="nav-icon">⚙</span>
+                                        <span class="nav-label">
+                                            Administrazioa
+                                        </span>
+                                    </a>
+                                `
+                                : ""
+                        }
+
+                    </nav>
+
+
+                    <!-- ERABILTZAILEA -->
+
+                    <div class="sidebar-user">
+
+                        <div class="sidebar-user-avatar">
+                            ${iniciales}
+                        </div>
+
+                        <div class="sidebar-user-info">
+
+                            <strong>
+                                ${nombre}
+                            </strong>
+
+                            <span>
+                                ${role}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- LOGOUT -->
+
+                    <button
+                        type="button"
+                        class="sidebar-logout"
+                        id="logoutButton"
+                    >
+                        <span class="nav-icon">↪</span>
+                        <span>Saioa itxi</span>
+                    </button>
+
+                </aside>
+
+
+                <!-- ==================================================
+                     MAIN AREA
+                     ================================================== -->
+
+                <div class="main-area">
+
+                    <!-- TOPBAR -->
+
+                    <header class="topbar">
+
+                        <button
+                            type="button"
+                            class="mobile-menu-button"
+                            id="mobileMenuButton"
+                            aria-label="Menua ireki"
+                        >
+                            ☰
+                        </button>
+
+
+                        <div class="topbar-spacer"></div>
+
+
+                        <div class="topbar-user">
+
+                            <div class="topbar-avatar">
+                                ${iniciales}
+                            </div>
+
+                            <div class="topbar-user-info">
+
+                                <strong>
+                                    ${nombre}
+                                </strong>
+
+                                <span>
+                                    ${role}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </header>
+
+
+                    <!-- EDUKIA -->
+
+                    <main class="content-area" id="pageContent">
+
+                        <!-- Dashboard / página se inserta aquí -->
+
+                    </main>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        this.inicializarEventos();
+
+        console.log("HLBPLayout: layout cargado correctamente.");
+    },
+
+
+    // ============================================================
+    // EVENTOS
+    // ============================================================
+
+    inicializarEventos() {
+
+        const logoutButton =
+            document.getElementById("logoutButton");
+
+        if (logoutButton) {
+
+            logoutButton.addEventListener(
+                "click",
+                async () => {
+
+                    logoutButton.disabled = true;
+                    logoutButton.textContent = "Saioa ixten...";
+
+                    try {
+
+                        const { error } =
+                            await window.hlbpSupabase.auth.signOut({
+                                scope: "local"
+                            });
+
+                        if (error) {
+                            console.error(
+                                "Errorea saioa ixtean:",
+                                error
+                            );
+                        }
+
+                    } catch (error) {
+
+                        console.error(
+                            "Logout error:",
+                            error
+                        );
+
+                    } finally {
+
+                        window.location.replace("../index.html");
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        // ========================================================
+        // MOBILE MENU
+        // ========================================================
+
+        const mobileMenuButton =
+            document.getElementById("mobileMenuButton");
+
+        const sidebar =
+            document.getElementById("sidebar");
+
+        if (
+            mobileMenuButton &&
+            sidebar
+        ) {
+
+            mobileMenuButton.addEventListener(
+                "click",
+                () => {
+
+                    sidebar.classList.toggle(
+                        "mobile-open"
+                    );
+
+                }
+            );
+
+
+            // Cerrar menú al pulsar un enlace
+
+            const navLinks =
+                sidebar.querySelectorAll(
+                    ".nav-item"
+                );
+
+            navLinks.forEach(
+                link => {
+
+                    link.addEventListener(
+                        "click",
+                        () => {
+
+                            sidebar.classList.remove(
+                                "mobile-open"
+                            );
+
+                        }
+                    );
+
+                }
+            );
+
+        }
+
+    },
+
+
+    // ============================================================
+    // PÁGINA ACTUAL
+    // ============================================================
+
+    obtenerPaginaActual() {
+
+        const pathname =
+            window.location.pathname
+                .toLowerCase();
+
+        if (
+            pathname.includes("dashboard")
+        ) {
+            return "dashboard";
+        }
+
+        if (
+            pathname.includes("erregistroa")
+        ) {
+            return "erregistroa";
+        }
+
+        if (
+            pathname.includes("historiala")
+        ) {
+            return "historiala";
+        }
+
+        if (
+            pathname.includes("zentroak")
+        ) {
+            return "zentroak";
+        }
+
+        if (
+            pathname.includes("administrazioa")
+        ) {
+            return "administrazioa";
+        }
+
+        return "dashboard";
+    },
+
+
+    // ============================================================
+    // INICIALES
+    // ============================================================
+
+    obtenerIniciales(nombre) {
+
+        if (!nombre) {
+            return "U";
+        }
+
+        const partes =
+            nombre
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean);
+
+        if (partes.length === 1) {
+            return partes[0]
+                .substring(0, 2)
+                .toUpperCase();
+        }
+
+        return (
+            partes[0].charAt(0) +
+            partes[partes.length - 1].charAt(0)
+        ).toUpperCase();
+    },
+
+
+    // ============================================================
+    // SEGURIDAD HTML
+    // ============================================================
+
+    escapeHtml(valor) {
+
+        return String(valor)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+};
