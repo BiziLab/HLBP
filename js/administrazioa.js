@@ -214,7 +214,7 @@ async function cargarListadoAholkulariak() {
             .from("registros")
             .select(`
                 id,
-                usuario_id
+                aholkulari_id
             `);
 
         if (registrosError) {
@@ -286,7 +286,7 @@ async function cargarListadoAholkulariak() {
             const registrosPersona =
                 (registros || []).filter(
                     registro =>
-                        String(registro.usuario_id) ===
+                        String(registro.aholkulari_id) ===
                         personaId
                 );
 
@@ -1337,20 +1337,20 @@ async function cargarPersona(id) {
                 .from("registros")
                 .select(`
                     id,
-                    usuario_id,
+                    aholkulari_id,
                     fecha,
                     fecha_fin,
                     centro_id,
                     tarea,
                     tipo,
                     subtipo,
-                    alumno_id,
+                    estudiante_id,
                     zehaztu,
                     estado,
                     observaciones,
                     created_at
                 `)
-                .eq("usuario_id", id)
+                .eq("aholkulari_id", id)
                 .order("fecha", {
                     ascending: false
                 });
@@ -1970,7 +1970,7 @@ function aplicarFiltrosRegistros() {
                 registro.tarea,
                 registro.tipo,
                 registro.subtipo,
-                registro.alumno_id,
+                registro.estudiante_id,
                 registro.zehaztu,
                 registro.estado,
                 registro.observaciones
@@ -2144,7 +2144,7 @@ function renderTablaRegistros(registros) {
 
                     <td>
                         ${escapeHtml(
-                            registro.alumno_id || "—"
+                            registro.estudiante_id || "—"
                         )}
                     </td>
 
@@ -2294,12 +2294,12 @@ async function descargarExcelGlobal() {
                 .from("registros")
                 .select(`
                     id,
-                    usuario_id,
+                    aholkulari_id,
                     centro_id,
                     tarea,
                     tipo,
                     subtipo,
-                    alumno_id,
+                    estudiante_id,
                     zehaztu,
                     fecha,
                     fecha_fin,
@@ -2388,7 +2388,7 @@ async function descargarExcelGlobal() {
                     const perfil =
                         perfilesMap.get(
                             String(
-                                registro.usuario_id
+                                registro.aholkulari_id
                             )
                         ) || {};
 
@@ -2441,7 +2441,7 @@ async function descargarExcelGlobal() {
                             registro.subtipo || "",
 
                         "Ikaslearen ID":
-                            registro.alumno_id || "",
+                            registro.estudiante_id || "",
 
                         "Zehaztu":
                             registro.zehaztu || "",
@@ -2604,7 +2604,7 @@ async function descargarExcelPersona() {
                         registro.subtipo || "",
 
                     "Ikaslearen ID":
-                        registro.alumno_id || "",
+                        registro.estudiante_id || "",
 
                     "Zehaztu":
                         registro.zehaztu || "",
