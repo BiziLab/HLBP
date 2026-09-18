@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="eu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLBP - Sistema Profesional</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<body>
+    <!-- LOGIN -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <h1>🎯 HLBP</h1>
+            <p>Sistema Profesional de Kudeaketa</p>
+            <div class="login-error" id="loginError"></div>
+            <div class="login-form">
+                <div class="form-group">
+                    <label>Kodigoa</label>
+                    <input type="text" id="codigoInput" placeholder="Sartu zure kodiga" autocomplete="off">
+                </div>
+                <button class="login-btn" onclick="login()">Sartu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div class="app-container" id="appContainer">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🎯 HLBP</h2>
+            </div>
+
+            <div class="user-card">
+                <strong id="userNameDisplay">Aholkularia</strong>
+                <p id="userSpecialtyDisplay" style="margin-bottom: 5px;">Espezialitatea</p>
+                <span class="user-badge" id="userTypeDisplay">Aholkularia</span>
+                <span class="sync-egoera" id="syncEgoera">⚪ Lokala (sinkronizaziorik gabe)</span>
+            </div>
+
+            <ul class="nav-menu" id="navMenu">
+                <li class="nav-item">
+                    <button class="nav-link active" onclick="showPage('dashboard')">📊 Dashboard</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="showPage('registro')">📝 Erregistroa</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="showPage('historial')">📋 Historiala</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="showPage('centros')">🏫 Zentroetako Erregistroa</button>
+                </li>
+            </ul>
+
+            <button class="logout-btn" onclick="logout()">Irten</button>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- DASHBOARD -->
+            <div class="page active" id="dashboardPage">
+                <div class="page-header">
+                    <h1 id="dashboardTitle">Ongi etorri!</h1>
+                    <p id="dateDisplay"></p>
+                </div>
+
+                <div class="stats-grid" id="statsContainer"></div>
+
+                <div class="section" id="userInfoSection"></div>
+                <div class="section" id="userCentrosSection"></div>
+            </div>
+
+            <!-- REGISTRO -->
+            <div class="page" id="registroPage">
+                <div class="page-header">
+                    <h1>📝 Eginkizun Berria</h1>
+                </div>
+
+                <div class="alert alert-success" id="successAlert">
+                    ✓ Eginkizuna ondo gorde da!
+                </div>
+
+                <div class="section">
+                    <h2>Erregistroaren datuak</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Aholkularia</label>
+                            <input type="text" id="registroAholkularia" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Ikastetxea *</label>
+                            <select id="registroCentro" onchange="updateTareas()">
+                                <option value="">Aukeratu ikastetxea...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Eginkizuna *</label>
+                            <select id="registroTarea" onchange="updateEremuak()">
+                                <option value="">Aukeratu eginkizuna...</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="grupoMota" style="display: none;">
+                            <label>Mota *</label>
+                            <select id="registroMota" onchange="updateMotaEremuak()">
+                                <option value=""></option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="grupoAzpiMota" style="display: none;">
+                            <label>Azpi-mota *</label>
+                            <select id="registroAzpiMota">
+                                <option value=""></option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="grupoIkaslea">
+                            <label>Ikaslearen ID *</label>
+                            <input type="text" id="registroIkaslea" placeholder="Adib: IK-0234 (EZ izen-abizenik)">
+                        </div>
+                        <div class="form-group">
+                            <label>Egiteko data *</label>
+                            <input type="date" id="registroData">
+                        </div>
+                        <div class="form-group">
+                            <label>Amaiera-data</label>
+                            <input type="date" id="registroAmaieraData">
+                        </div>
+                        <div class="form-group">
+                            <label>Egoera</label>
+                            <select id="registroEgoera">
+                                <option value="Egin gabe">Egin gabe</option>
+                                <option value="Eginda">Eginda</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="grupoZehaztu" style="display: none; grid-column: 1 / -1;">
+                            <label>Zehaztu *</label>
+                            <textarea id="registroZehaztu" placeholder="Zehaztu eginbeharrak..." style="min-height: 60px;"></textarea>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Oharrak</label>
+                            <textarea id="registroOharrak" placeholder="Gehitu ohar... (EZ idatzi ikasleen izen-abizenik)" style="min-height: 80px;"></textarea>
+                        </div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="guardarRegistro()">💾 Gorde</button>
+                        <button class="btn btn-secondary" onclick="limpiarRegistro()">🔄 Garbitu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTORIAL -->
+            <div class="page" id="historialPage">
+                <div class="page-header">
+                    <h1>📋 Historiala</h1>
+                </div>
+                <div class="section">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Ikastetxea</th>
+                                    <th>Eginkizuna</th>
+                                    <th>Ikaslea</th>
+                                    <th>Egoera</th>
+                                    <th>Ekintza</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historialTable">
+                                <tr><td colspan="6" class="no-data">Ez dago erregistrorik</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ZENTROETAKO ERREGISTROA -->
+            <div class="page" id="centrosPage">
+                <div class="page-header">
+                    <h1>🏫 Zentroetako Erregistroa</h1>
+                    <p>Ikastetxe bakoitzaren eginkizunak eta eskaera guztiak</p>
+                </div>
+
+                <div id="centroDetalle" style="display: none;">
+                    <div class="section">
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
+                            <button class="btn btn-secondary" onclick="volverCentros()" style="flex: 0;">⬅️ Atzera</button>
+                            <h2 id="centroNombre" style="margin: 0; color: var(--dark);">Centro</h2>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                            <div class="stat-card">
+                                <h3>Erregistro Osoa</h3>
+                                <div class="number" id="centroTotalRegistros">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Egunkoak</h3>
+                                <div class="number" id="centroRegistrosHoy">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Aholkulariak</h3>
+                                <div class="number" id="centroAholkulariak">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Eginkizun Motak</h3>
+                                <div class="number" id="centroTareas">0</div>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Aholkularia</th>
+                                        <th>Eginkizuna</th>
+                                        <th>Ikaslea</th>
+                                        <th>Egoera</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="centroRegistrosTable">
+                                    <tr><td colspan="5" class="no-data">Ez dago erregistrorik</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="centroLista" style="display: block;">
+                    <div class="section">
+                        <h2>🏢 Zentroak Zerrenda</h2>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;" id="centrosGrid">
+                            <div class="no-data">Kargan...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN PANEL -->
+            <div class="page" id="adminPage">
+                <div class="page-header">
+                    <h1>⚙️ Administrazioa</h1>
+                    <p id="adminSubtitle"></p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Erregistro Osoa</h3>
+                        <div class="number" id="adminTotalRegistros">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Aholkulariak</h3>
+                        <div class="number" id="adminTotalAholkulariak">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Zentro Desberdina</h3>
+                        <div class="number" id="adminTotalCentros">0</div>
+                    </div>
+                </div>
+
+                <!-- GESTIÓN DE USUARIOS -->
+                <div class="section" id="adminGestionSekcio">
+                    <h2>👥 Aholkulariak Kudeaketa</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Izena *</label>
+                            <input type="text" id="adminNewNombre" placeholder="Aholkulariaren izena">
+                        </div>
+                        <div class="form-group">
+                            <label>Kodigoa *</label>
+                            <input type="text" id="adminNewCodigo" placeholder="Adib: AHL094">
+                        </div>
+                        <div class="form-group">
+                            <label>Berritzegune *</label>
+                            <input type="text" id="adminNewBerritzegune" placeholder="BERRITZEGUNE">
+                        </div>
+                        <div class="form-group">
+                            <label>Espezialitatea *</label>
+                            <select id="adminNewEspecialidad">
+                                <option value="">Aukeratu...</option>
+                                <option value="Inklusioa">Inklusioa</option>
+                                <option value="Bizikidetza">Bizikidetza</option>
+                                <option value="Posbentzioa">Posbentzioa</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Zentroak (kodigo, zatituta koma)</label>
+                            <input type="text" id="adminNewCentros" placeholder="010258,010135,010138">
+                        </div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-success" onclick="agregarAholkularia()">➕ Gehitu Aholkularia</button>
+                    </div>
+                </div>
+
+                <!-- TABLA DE USUARIOS -->
+                <div class="section">
+                    <h2>📊 Aholkulariak Zerrenda</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Kodigoa</th>
+                                    <th>Izena</th>
+                                    <th>Berritzegune</th>
+                                    <th>Espezialitatea</th>
+                                    <th>Zentroak</th>
+                                    <th>Erregistroak</th>
+                                    <th id="aktzioaHead">Ekintza</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUsersTable">
+                                <tr><td colspan="7" class="no-data">Kargan...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TODOS LOS REGISTROS -->
+                <div class="section">
+                    <h2>📋 Guztien Erregistroak</h2>
+                    <div class="button-group" id="exportButtonGroup">
+                        <button class="btn btn-primary" onclick="exportarExcelCompleto()">📥 Enportatu Excel Osoa</button>
+                        <button class="btn btn-secondary" onclick="exportarJSON()">💾 Deskargatü Backup</button>
+                    </div>
+                    <div class="table-container" style="margin-top: 20px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Aholkularia</th>
+                                    <th>Ikastetxea</th>
+                                    <th>Eginkizuna</th>
+                                    <th>Ikaslea</th>
+                                    <th>Egoera</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminAllRegistrosTable">
+                                <tr><td colspan="6" class="no-data">Ez dago erregistrorik</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AHOLKULARIAREN FITXA MODALA -->
+    <div class="ficha-overlay" id="fichaOverlay" onclick="if (event.target === this) cerrarFicha()">
+        <div class="ficha-modal">
+            <button class="ficha-close" onclick="cerrarFicha()" title="Itxi">✕</button>
+            <div id="fichaEdukia"></div>
+        </div>
+    </div>
+    <!-- Datos base y configuración de la aplicación -->
+    <script src="data/datos-base.js"></script>
+
+    <!--
+    NOTA:
+    datos-ejemplo.js NO se carga por defecto porque contiene datos de ejemplo.
+    Si más adelante confirmamos que debe usarse, lo activaremos.
+    -->
+
+    <!-- Firebase: se mantiene temporalmente durante la migración -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <!-- Aplicación -->
+    <script src="js/app.js"></script>
+</body>
+</html>
