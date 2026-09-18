@@ -1,32 +1,129 @@
 // ============================================================
-// HLBP - Sesión y permisos
+// HLBP - GESTIÓN DE SESIÓN
 // ============================================================
 
 window.HLBPSession = {
 
     user: null,
     profile: null,
+    initialized: false,
 
     async init() {
 
-        const user = await obtenerUsuarioActual();
-
-        if (!user) {
-            window.location.href = "../index.html";
-            return false;
+        // Evitar inicializar dos veces
+        if (this.initialized) {
+            return !!this.user;
         }
 
-        const profile = await obtenerPerfilActual();
+        this.initialized = true;
 
-        if (!profile) {
-            await cerrarSesion();
+        try {
+
+            // Comprobar usuario REAL en Supabase
+            const {
+                data,
+                error
+            } = await window.hlbpSupabase.auth.getUser();
+
+            if (error) {
+                console.error(
+                    "Error comprobando sesión:",
+                    error
+                );
+
+                this.user = null;
+                this.profile = null;
+
+                return false;
+            }
+
+            // No existe sesión
+            if (!data || !data.user) {
+
+                console.log(
+                    "HLBP: no hay sesión activa."
+                );
+
+                this.user = null;
+                this.profile = null;
+
+                return false;
+            }
+
+            // Usuario autenticado
+            this.user = data.user;
+
+            console.log(
+                "HLBP: usuario autenticado:",
+                this.user.email
+            );
+
+
+            // ----------------------------------------------------
+            // Obtener perfil desde PostgreSQL
+            // ----------------------------------------------------
+
+            const {
+                data: profile,
+                error: profileError
+            } = await window.hlbpSupabase
+                .from("profiles")
+                .select("*")
+                .eq("id", this.user.id)
+                .maybeSingle();
+
+
+            if (profileError) {
+
+                console.error(
+                    "Error obteniendo perfil:",
+                    profileError
+                );
+
+                // El usuario existe en Auth,
+                // pero no tiene perfil válido.
+                this.profile = null;
+
+                return false;
+            }
+
+
+            if (!profile) {
+
+                console.error(
+                    "El usuario no tiene perfil en profiles."
+                );
+
+                this.profile = null;
+
+                return false;
+            }
+
+
+            this.profile = profile;
+
+
+            console.log(
+                "HLBP: perfil cargado:",
+                this.profile
+            );
+
+
+            return true;
+
+
+        } catch (error) {
+
+            console.error(
+                "Error inicializando sesión:",
+                error
+            );
+
+            this.user = null;
+            this.profile = null;
+
             return false;
         }
-
-        this.user = user;
-        this.profile = profile;
-
-        return true;
     },
 
 
@@ -46,7 +143,10 @@ window.HLBPSession = {
 
 
     isAdminOrMaster() {
-        return this.isAdmin() || this.isMaster();
+        return (
+            this.isAdmin() ||
+            this.isMaster()
+        );
     },
 
 
@@ -62,22 +162,32 @@ window.HLBPSession = {
         const apellidos =
             this.profile.apellidos || "";
 
-        return `${nombre} ${apellidos}`.trim()
-            || this.profile.email
-            || "Usuario";
+        return `${nombre} ${apellidos}`.trim();
+
     },
 
 
     getRoleLabel() {
 
-        if (this.isMaster()) {
-            return "MASTER";
+        if (!this.profile) {
+            return "";
         }
 
-        if (this.isAdmin()) {
-            return "ADMIN";
-        }
+        switch (this.profile.role) {
 
-        return "AHL";
+            case "MASTER":
+                return "Administrador Master";
+
+            case "ADMIN":
+                return "Administrador";
+
+            case "AHL":
+                return "Aholkularia";
+
+            default:
+                return this.profile.role || "";
+
+        }
     }
+
 };
