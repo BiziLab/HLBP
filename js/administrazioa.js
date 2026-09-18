@@ -17,48 +17,99 @@ async function iniciarAdministrazioa() {
 
         console.log("HLBP Administrazioa: iniciando...");
 
-        const sesionOk = await window.HLBPSession.init();
+        const sesionOk =
+            await window.HLBPSession.init();
 
         if (!sesionOk) {
-            console.error("Administrazioa: no hay sesión.");
+
+            console.error(
+                "Administrazioa: no hay sesión."
+            );
+
             window.location.replace("../index.html");
+
             return;
         }
+
 
         console.log(
             "HLBP Administrazioa: usuario autenticado:",
             window.HLBPSession.user?.email
         );
 
-        // Solo ADMIN y MASTER
-        if (!window.HLBPSession.isAdminOrMaster()) {
+
+        // ----------------------------------------------------
+        // PERMISOS
+        // ----------------------------------------------------
+
+        if (
+            !window.HLBPSession.isAdminOrMaster()
+        ) {
 
             console.error(
                 "Administrazioa: usuario sin permisos."
             );
 
-            window.location.replace("dashboard.html");
+            window.location.replace(
+                "dashboard.html"
+            );
+
             return;
         }
 
-        // Cargar layout principal
+
+        // ----------------------------------------------------
+        // LAYOUT
+        // ----------------------------------------------------
+
         window.HLBPLayout.render();
 
-        // Obtener zona de contenido
+
         const pageContent =
-            document.getElementById("pageContent");
+            document.getElementById(
+                "pageContent"
+            );
+
 
         if (!pageContent) {
+
             throw new Error(
                 "No se encontró #pageContent después de cargar el layout."
             );
         }
 
+
         console.log(
             "Administrazioa: #pageContent encontrado."
         );
 
-        await renderAdministrazioa();
+
+        // ----------------------------------------------------
+        // PERSONA INDIVIDUAL O LISTADO GENERAL
+        // ----------------------------------------------------
+
+        const parametros =
+            new URLSearchParams(
+                window.location.search
+            );
+
+
+        const personaId =
+            parametros.get("persona");
+
+
+        if (personaId) {
+
+            await cargarPersona(
+                personaId
+            );
+
+        } else {
+
+            await renderAdministrazioa();
+
+        }
+
 
     } catch (error) {
 
@@ -67,7 +118,9 @@ async function iniciarAdministrazioa() {
             error
         );
 
-        mostrarErrorAdministrazioa(error);
+        mostrarErrorAdministrazioa(
+            error
+        );
     }
 }
 
@@ -79,29 +132,42 @@ async function iniciarAdministrazioa() {
 async function renderAdministrazioa() {
 
     const pageContent =
-        document.getElementById("pageContent");
+        document.getElementById(
+            "pageContent"
+        );
+
 
     if (!pageContent) {
-        throw new Error("No existe #pageContent.");
+
+        throw new Error(
+            "No existe #pageContent."
+        );
     }
 
+
     pageContent.innerHTML = `
+
         <div class="admin-page">
 
             <div class="admin-page-header">
 
                 <div>
+
                     <div class="admin-breadcrumb">
                         HLBP / Administrazioa
                     </div>
 
-                    <h1>Aholkulariak Kudeaketa</h1>
+                    <h1>
+                        Aholkulariak Kudeaketa
+                    </h1>
 
                     <p>
                         Aholkulariak, zentroak eta erregistroak
                         kudeatzeko administrazio panela.
                     </p>
+
                 </div>
+
 
                 <div class="admin-header-actions">
 
@@ -112,6 +178,7 @@ async function renderAdministrazioa() {
                     >
                         📥 Excelera deskargatu
                     </button>
+
 
                     <button
                         type="button"
@@ -125,11 +192,17 @@ async function renderAdministrazioa() {
 
             </div>
 
+
             <div id="adminContent">
 
                 <div class="admin-loading">
+
                     <div class="loading-spinner"></div>
-                    <p>Kargatzen...</p>
+
+                    <p>
+                        Kargatzen...
+                    </p>
+
                 </div>
 
             </div>
@@ -137,19 +210,26 @@ async function renderAdministrazioa() {
         </div>
     `;
 
+
     document
-        .getElementById("btnNuevoAholkularia")
+        .getElementById(
+            "btnNuevoAholkularia"
+        )
         ?.addEventListener(
             "click",
             mostrarFormularioNuevoAholkularia
         );
 
+
     document
-        .getElementById("btnExcelGlobal")
+        .getElementById(
+            "btnExcelGlobal"
+        )
         ?.addEventListener(
             "click",
             descargarExcelGlobal
         );
+
 
     await cargarListadoAholkulariak();
 }
@@ -162,20 +242,40 @@ async function renderAdministrazioa() {
 async function cargarListadoAholkulariak() {
 
     const container =
-        document.getElementById("adminContent");
+        document.getElementById(
+            "adminContent"
+        );
 
-    if (!container) return;
+
+    if (!container) {
+        return;
+    }
+
 
     container.innerHTML = `
+
         <div class="admin-loading">
+
             <div class="loading-spinner"></div>
-            <p>Aholkulariak kargatzen...</p>
+
+            <p>
+                Aholkulariak kargatzen...
+            </p>
+
         </div>
     `;
 
+
     try {
 
-        const { data: perfiles, error } =
+        // ----------------------------------------------------
+        // PERFILES
+        // ----------------------------------------------------
+
+        const {
+            data: perfiles,
+            error: perfilesError
+        } =
             await window.hlbpSupabase
                 .from("profiles")
                 .select(`
@@ -189,135 +289,202 @@ async function cargarListadoAholkulariak() {
                     espezialitatea,
                     activo
                 `)
-                .eq("role", "AHL")
-                .order("apellidos", {
-                    ascending: true
-                })
-                .order("nombre", {
-                    ascending: true
-                });
+                .eq(
+                    "role",
+                    "AHL"
+                )
+                .order(
+                    "apellidos",
+                    {
+                        ascending: true
+                    }
+                )
+                .order(
+                    "nombre",
+                    {
+                        ascending: true
+                    }
+                );
 
-        if (error) {
-            throw error;
+
+        if (perfilesError) {
+            throw perfilesError;
         }
 
-        const personas = perfiles || [];
+
+        const personas =
+            perfiles || [];
+
 
         // ----------------------------------------------------
-        // Registros globales
+        // REGISTROS
+        //
+        // IMPORTANTE:
+        // La columna real es aholkulari_id
         // ----------------------------------------------------
 
         const {
             data: registros,
             error: registrosError
-        } = await window.hlbpSupabase
-            .from("registros")
-            .select(`
-                id,
-                aholkulari_id
-            `);
+        } =
+            await window.hlbpSupabase
+                .from("registros")
+                .select(`
+                    id,
+                    aholkulari_id
+                `);
+
 
         if (registrosError) {
             throw registrosError;
         }
 
+
         // ----------------------------------------------------
-        // Centros asignados
+        // RELACIONES AHOLKULARIA -> CENTRO
         // ----------------------------------------------------
 
         const {
             data: relacionesCentros,
+            error: relacionesError
+        } =
+            await window.hlbpSupabase
+                .from("aholkulari_centros")
+                .select(`
+                    id,
+                    aholkulari_id,
+                    centro_id
+                `);
+
+
+        if (relacionesError) {
+            throw relacionesError;
+        }
+
+
+        // ----------------------------------------------------
+        // CENTROS
+        // ----------------------------------------------------
+
+        const {
+            data: centros,
             error: centrosError
-        } = await window.hlbpSupabase
-            .from("aholkulari_centros")
-            .select(`
-                id,
-                aholkulari_id,
-                centro_id
-            `);
+        } =
+            await window.hlbpSupabase
+                .from("centros")
+                .select(`
+                    id,
+                    codigo,
+                    nombre,
+                    municipio,
+                    zona,
+                    activo
+                `)
+                .order(
+                    "codigo",
+                    {
+                        ascending: true
+                    }
+                );
+
 
         if (centrosError) {
             throw centrosError;
         }
 
+
         // ----------------------------------------------------
-        // Centros
+        // MAPA DE CENTROS
         // ----------------------------------------------------
 
-        const {
-            data: centros,
-            error: centrosDataError
-        } = await window.hlbpSupabase
-            .from("centros")
-            .select(`
-                id,
-                codigo,
-                nombre,
-                municipio,
-                zona,
-                activo
-            `)
-            .order("codigo", {
-                ascending: true
-            });
+        const centrosMap =
+            new Map();
 
-        if (centrosDataError) {
-            throw centrosDataError;
-        }
 
-        const centrosMap = new Map();
+        (centros || []).forEach(
+            centro => {
 
-        (centros || []).forEach(centro => {
-            centrosMap.set(
-                String(centro.id),
-                centro
+                centrosMap.set(
+                    String(centro.id),
+                    centro
+                );
+            }
+        );
+
+
+        // ----------------------------------------------------
+        // CONSTRUIR DATOS
+        // ----------------------------------------------------
+
+        const datos =
+            personas.map(
+                persona => {
+
+                    const personaId =
+                        String(
+                            persona.id
+                        );
+
+
+                    const registrosPersona =
+                        (registros || [])
+                            .filter(
+                                registro =>
+                                    String(
+                                        registro.aholkulari_id
+                                    ) ===
+                                    personaId
+                            );
+
+
+                    const relacionesPersona =
+                        (relacionesCentros || [])
+                            .filter(
+                                relacion =>
+                                    String(
+                                        relacion.aholkulari_id
+                                    ) ===
+                                    personaId
+                            );
+
+
+                    const centrosPersona =
+                        relacionesPersona
+                            .map(
+                                relacion =>
+                                    centrosMap.get(
+                                        String(
+                                            relacion.centro_id
+                                        )
+                                    )
+                            )
+                            .filter(
+                                Boolean
+                            );
+
+
+                    return {
+
+                        ...persona,
+
+                        registrosCount:
+                            registrosPersona.length,
+
+                        centrosCount:
+                            centrosPersona.length,
+
+                        centros:
+                            centrosPersona
+
+                    };
+                }
             );
-        });
 
-        // ----------------------------------------------------
-        // Construir datos
-        // ----------------------------------------------------
 
-        const datos = personas.map(persona => {
+        renderListado(
+            datos
+        );
 
-            const personaId =
-                String(persona.id);
-
-            const registrosPersona =
-                (registros || []).filter(
-                    registro =>
-                        String(registro.aholkulari_id) ===
-                        personaId
-                );
-
-            const relacionesPersona =
-                (relacionesCentros || []).filter(
-                    relacion =>
-                        String(relacion.aholkulari_id) ===
-                        personaId
-                );
-
-            const centrosPersona =
-                relacionesPersona
-                    .map(relacion =>
-                        centrosMap.get(
-                            String(relacion.centro_id)
-                        )
-                    )
-                    .filter(Boolean);
-
-            return {
-                ...persona,
-                registrosCount:
-                    registrosPersona.length,
-                centrosCount:
-                    centrosPersona.length,
-                centros:
-                    centrosPersona
-            };
-        });
-
-        renderListado(datos);
 
     } catch (error) {
 
@@ -326,18 +493,31 @@ async function cargarListadoAholkulariak() {
             error
         );
 
-        container.innerHTML = `
-            <div class="admin-panel">
-                <div class="admin-empty-state">
-                    <div class="admin-empty-icon">⚠️</div>
 
-                    <h3>Ezin izan dira Aholkulariak kargatu</h3>
+        container.innerHTML = `
+
+            <div class="admin-panel">
+
+                <div class="admin-empty-state">
+
+                    <div class="admin-empty-icon">
+                        ⚠️
+                    </div>
+
+
+                    <h3>
+                        Ezin izan dira Aholkulariak kargatu
+                    </h3>
+
 
                     <p>
                         ${escapeHtml(
-                            obtenerMensajeError(error)
+                            obtenerMensajeError(
+                                error
+                            )
                         )}
                     </p>
+
 
                     <button
                         type="button"
@@ -346,7 +526,9 @@ async function cargarListadoAholkulariak() {
                     >
                         Berriro saiatu
                     </button>
+
                 </div>
+
             </div>
         `;
     }
@@ -357,33 +539,54 @@ async function cargarListadoAholkulariak() {
 // RENDER LISTADO
 // ============================================================
 
-function renderListado(personas) {
+function renderListado(
+    personas
+) {
 
     const container =
-        document.getElementById("adminContent");
+        document.getElementById(
+            "adminContent"
+        );
 
-    if (!container) return;
+
+    if (!container) {
+        return;
+    }
+
 
     const totalPersonas =
         personas.length;
 
+
     const totalRegistros =
         personas.reduce(
-            (total, persona) =>
-                total + persona.registrosCount,
+            (
+                total,
+                persona
+            ) =>
+                total +
+                persona.registrosCount,
             0
         );
+
 
     const totalCentros =
         personas.reduce(
-            (total, persona) =>
-                total + persona.centrosCount,
+            (
+                total,
+                persona
+            ) =>
+                total +
+                persona.centrosCount,
             0
         );
 
+
     container.innerHTML = `
 
+        <!-- ========================================= -->
         <!-- RESUMEN -->
+        <!-- ========================================= -->
 
         <div class="admin-summary">
 
@@ -394,6 +597,7 @@ function renderListado(personas) {
                 </div>
 
                 <div>
+
                     <span class="admin-stat-label">
                         Aholkulariak
                     </span>
@@ -401,6 +605,7 @@ function renderListado(personas) {
                     <strong class="admin-stat-value">
                         ${totalPersonas}
                     </strong>
+
                 </div>
 
             </div>
@@ -413,6 +618,7 @@ function renderListado(personas) {
                 </div>
 
                 <div>
+
                     <span class="admin-stat-label">
                         Erregistroak
                     </span>
@@ -420,6 +626,7 @@ function renderListado(personas) {
                     <strong class="admin-stat-value">
                         ${totalRegistros}
                     </strong>
+
                 </div>
 
             </div>
@@ -432,6 +639,7 @@ function renderListado(personas) {
                 </div>
 
                 <div>
+
                     <span class="admin-stat-label">
                         Zentroen esleipenak
                     </span>
@@ -439,6 +647,7 @@ function renderListado(personas) {
                     <strong class="admin-stat-value">
                         ${totalCentros}
                     </strong>
+
                 </div>
 
             </div>
@@ -446,21 +655,32 @@ function renderListado(personas) {
         </div>
 
 
-        <!-- FILTROS -->
+        <!-- ========================================= -->
+        <!-- PANEL -->
+        <!-- ========================================= -->
 
         <div class="admin-panel">
 
             <div class="admin-panel-header">
 
                 <div>
-                    <h2>Aholkulariak</h2>
+
+                    <h2>
+                        Aholkulariak
+                    </h2>
+
                     <p>
                         Sistemako Aholkulariak kudeatu.
                     </p>
+
                 </div>
 
             </div>
 
+
+            <!-- ========================================= -->
+            <!-- FILTROS -->
+            <!-- ========================================= -->
 
             <div class="admin-filters">
 
@@ -527,7 +747,9 @@ function renderListado(personas) {
                             Guztiak
                         </option>
 
-                        ${obtenerBerritzeguneOptions(personas)}
+                        ${obtenerBerritzeguneOptions(
+                            personas
+                        )}
 
                     </select>
 
@@ -544,88 +766,125 @@ function renderListado(personas) {
         </div>
     `;
 
+
     const search =
-        document.getElementById("adminSearch");
+        document.getElementById(
+            "adminSearch"
+        );
+
 
     const especialidad =
-        document.getElementById("adminEspecialidad");
+        document.getElementById(
+            "adminEspecialidad"
+        );
+
 
     const berritzegune =
-        document.getElementById("adminBerritzegune");
+        document.getElementById(
+            "adminBerritzegune"
+        );
+
 
     function aplicarFiltros() {
 
         const texto =
             search?.value
-                .trim()
-                .toLowerCase() || "";
+                ?.trim()
+                .toLowerCase() ||
+            "";
+
 
         const especialidadValue =
-            especialidad?.value || "";
+            especialidad?.value ||
+            "";
+
 
         const berritzeguneValue =
-            berritzegune?.value || "";
+            berritzegune?.value ||
+            "";
+
 
         const filtradas =
-            personas.filter(persona => {
+            personas.filter(
+                persona => {
 
-                const nombre =
-                    `${persona.nombre || ""} ${persona.apellidos || ""}`
-                        .trim()
-                        .toLowerCase();
+                    const nombre =
+                        `${persona.nombre || ""} ${persona.apellidos || ""}`
+                            .trim()
+                            .toLowerCase();
 
-                const codigo =
-                    String(
-                        persona.codigo || ""
-                    ).toLowerCase();
 
-                const email =
-                    String(
-                        persona.email || ""
-                    ).toLowerCase();
+                    const codigo =
+                        String(
+                            persona.codigo ||
+                            ""
+                        ).toLowerCase();
 
-                const coincideTexto =
-                    !texto ||
-                    nombre.includes(texto) ||
-                    codigo.includes(texto) ||
-                    email.includes(texto);
 
-                const coincideEspecialidad =
-                    !especialidadValue ||
-                    persona.espezialitatea ===
-                        especialidadValue;
+                    const email =
+                        String(
+                            persona.email ||
+                            ""
+                        ).toLowerCase();
 
-                const coincideBerritzegune =
-                    !berritzeguneValue ||
-                    persona.berritzegune ===
-                        berritzeguneValue;
 
-                return (
-                    coincideTexto &&
-                    coincideEspecialidad &&
-                    coincideBerritzegune
-                );
-            });
+                    const coincideTexto =
+                        !texto ||
+                        nombre.includes(
+                            texto
+                        ) ||
+                        codigo.includes(
+                            texto
+                        ) ||
+                        email.includes(
+                            texto
+                        );
+
+
+                    const coincideEspecialidad =
+                        !especialidadValue ||
+                        persona.espezialitatea ===
+                            especialidadValue;
+
+
+                    const coincideBerritzegune =
+                        !berritzeguneValue ||
+                        persona.berritzegune ===
+                            berritzeguneValue;
+
+
+                    return (
+                        coincideTexto &&
+                        coincideEspecialidad &&
+                        coincideBerritzegune
+                    );
+                }
+            );
+
 
         renderTablaAholkulariak(
             filtradas
         );
     }
 
+
     search?.addEventListener(
         "input",
         aplicarFiltros
     );
+
 
     especialidad?.addEventListener(
         "change",
         aplicarFiltros
     );
 
+
     berritzegune?.addEventListener(
         "change",
         aplicarFiltros
     );
+
 
     aplicarFiltros();
 }
@@ -635,143 +894,187 @@ function renderListado(personas) {
 // TABLA AHOLKULARIAK
 // ============================================================
 
-function renderTablaAholkulariak(personas) {
+function renderTablaAholkulariak(
+    personas
+) {
 
     const container =
         document.getElementById(
             "adminTableContainer"
         );
 
-    if (!container) return;
+
+    if (!container) {
+        return;
+    }
+
 
     if (!personas.length) {
 
         container.innerHTML = `
+
             <div class="admin-empty-state">
+
                 <div class="admin-empty-icon">
                     👥
                 </div>
 
-                <h3>Ez dago emaitzarik</h3>
+                <h3>
+                    Ez dago emaitzarik
+                </h3>
 
                 <p>
                     Ez da Aholkularirik aurkitu
                     hautatutako irizpideekin.
                 </p>
+
             </div>
         `;
 
         return;
     }
 
+
     const rows =
-        personas.map(persona => {
+        personas
+            .map(
+                persona => {
 
-            const nombre =
-                `${persona.nombre || ""} ${persona.apellidos || ""}`
-                    .trim() ||
-                persona.email ||
-                "—";
-
-            const centros =
-                persona.centros || [];
-
-            const centrosTexto =
-                centros.length
-                    ? centros
-                        .map(
-                            centro =>
-                                centro.codigo ||
-                                centro.nombre ||
-                                ""
-                        )
-                        .filter(Boolean)
-                        .join(", ")
-                    : "—";
-
-            return `
-                <tr>
-
-                    <td>
-                        <strong>
-                            ${escapeHtml(
-                                persona.codigo || "—"
-                            )}
-                        </strong>
-                    </td>
+                    const nombre =
+                        `${persona.nombre || ""} ${persona.apellidos || ""}`
+                            .trim() ||
+                        persona.email ||
+                        "—";
 
 
-                    <td>
-
-                        <div class="admin-person-name">
-                            ${escapeHtml(nombre)}
-                        </div>
-
-                        <div class="admin-person-email">
-                            ${escapeHtml(
-                                persona.email || ""
-                            )}
-                        </div>
-
-                    </td>
+                    const centros =
+                        persona.centros ||
+                        [];
 
 
-                    <td>
-                        ${escapeHtml(
-                            persona.berritzegune || "—"
-                        )}
-                    </td>
+                    const centrosTexto =
+                        centros.length
+                            ? centros
+                                .map(
+                                    centro =>
+                                        centro.codigo ||
+                                        centro.nombre ||
+                                        ""
+                                )
+                                .filter(
+                                    Boolean
+                                )
+                                .join(
+                                    ", "
+                                )
+                            : "—";
 
 
-                    <td>
+                    return `
 
-                        ${
-                            persona.espezialitatea
-                                ? `
-                                    <span class="admin-badge">
-                                        ${escapeHtml(
-                                            persona.espezialitatea
-                                        )}
-                                    </span>
-                                  `
-                                : "—"
-                        }
+                        <tr>
 
-                    </td>
+                            <td>
 
+                                <strong>
+                                    ${escapeHtml(
+                                        persona.codigo ||
+                                        "—"
+                                    )}
+                                </strong>
 
-                    <td>
-                        ${escapeHtml(
-                            centrosTexto
-                        )}
-                    </td>
+                            </td>
 
 
-                    <td>
-                        <strong>
-                            ${persona.registrosCount}
-                        </strong>
-                    </td>
+                            <td>
+
+                                <div class="admin-person-name">
+
+                                    ${escapeHtml(
+                                        nombre
+                                    )}
+
+                                </div>
 
 
-                    <td>
+                                <div class="admin-person-email">
 
-                        <button
-                            type="button"
-                            class="admin-btn admin-btn-small admin-btn-secondary"
-                            data-persona-id="${escapeHtml(
-                                persona.id
-                            )}"
-                            onclick="abrirPersonaDesdeBoton(this)"
-                        >
-                            IKUSI
-                        </button>
+                                    ${escapeHtml(
+                                        persona.email ||
+                                        ""
+                                    )}
 
-                    </td>
+                                </div>
 
-                </tr>
-            `;
-        }).join("");
+                            </td>
+
+
+                            <td>
+
+                                ${escapeHtml(
+                                    persona.berritzegune ||
+                                    "—"
+                                )}
+
+                            </td>
+
+
+                            <td>
+
+                                ${
+                                    persona.espezialitatea
+                                        ? `
+                                            <span class="admin-badge">
+                                                ${escapeHtml(
+                                                    persona.espezialitatea
+                                                )}
+                                            </span>
+                                          `
+                                        : "—"
+                                }
+
+                            </td>
+
+
+                            <td>
+
+                                ${escapeHtml(
+                                    centrosTexto
+                                )}
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    ${persona.registrosCount}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                <button
+                                    type="button"
+                                    class="admin-btn admin-btn-small admin-btn-secondary"
+                                    data-persona-id="${escapeHtml(
+                                        persona.id
+                                    )}"
+                                    onclick="abrirPersonaDesdeBoton(this)"
+                                >
+                                    IKUSI
+                                </button>
+
+                            </td>
+
+                        </tr>
+                    `;
+                }
+            )
+            .join("");
+
 
 
     container.innerHTML = `
@@ -783,19 +1086,30 @@ function renderTablaAholkulariak(personas) {
                 <thead>
 
                     <tr>
+
                         <th>Kodigoa</th>
+
                         <th>Izena</th>
+
                         <th>Kokapena</th>
+
                         <th>Espezialitatea</th>
+
                         <th>Zentroak</th>
+
                         <th>Erregistroak</th>
+
                         <th>Ekintza</th>
+
                     </tr>
 
                 </thead>
 
+
                 <tbody>
+
                     ${rows}
+
                 </tbody>
 
             </table>
@@ -809,15 +1123,23 @@ function renderTablaAholkulariak(personas) {
 // ABRIR PERSONA
 // ============================================================
 
-function abrirPersonaDesdeBoton(button) {
+function abrirPersonaDesdeBoton(
+    button
+) {
 
     const id =
-        button.dataset.personaId;
+        button?.dataset?.personaId;
 
-    if (!id) return;
+
+    if (!id) {
+        return;
+    }
+
 
     window.location.href =
-        `administrazioa.html?persona=${encodeURIComponent(id)}`;
+        `administrazioa.html?persona=${encodeURIComponent(
+            id
+        )}`;
 }
 
 
@@ -828,9 +1150,15 @@ function abrirPersonaDesdeBoton(button) {
 function mostrarFormularioNuevoAholkularia() {
 
     const pageContent =
-        document.getElementById("pageContent");
+        document.getElementById(
+            "pageContent"
+        );
 
-    if (!pageContent) return;
+
+    if (!pageContent) {
+        return;
+    }
+
 
     pageContent.innerHTML = `
 
@@ -841,10 +1169,15 @@ function mostrarFormularioNuevoAholkularia() {
                 <div>
 
                     <div class="admin-breadcrumb">
-                        HLBP / Administrazioa / Aholkularia berria
+                        HLBP / Administrazioa /
+                        Aholkularia berria
                     </div>
 
-                    <h1>Aholkularia gehitu</h1>
+
+                    <h1>
+                        Aholkularia gehitu
+                    </h1>
+
 
                     <p>
                         Sortu Aholkulariaren erabiltzaile-kontua
@@ -852,6 +1185,7 @@ function mostrarFormularioNuevoAholkularia() {
                     </p>
 
                 </div>
+
 
                 <div class="admin-header-actions">
 
@@ -873,12 +1207,16 @@ function mostrarFormularioNuevoAholkularia() {
                 <div class="admin-panel-header">
 
                     <div>
-                        <h2>Aholkulariaren datuak</h2>
+
+                        <h2>
+                            Aholkulariaren datuak
+                        </h2>
 
                         <p>
-                            Derrigorrezko eremuak * batekin
-                            markatuta daude.
+                            Derrigorrezko eremuak *
+                            batekin markatuta daude.
                         </p>
+
                     </div>
 
                 </div>
@@ -1041,6 +1379,7 @@ function mostrarFormularioNuevoAholkularia() {
                             Utzi
                         </button>
 
+
                         <button
                             type="submit"
                             class="admin-btn admin-btn-primary"
@@ -1060,7 +1399,9 @@ function mostrarFormularioNuevoAholkularia() {
 
 
     document
-        .getElementById("btnVolverListado")
+        .getElementById(
+            "btnVolverListado"
+        )
         ?.addEventListener(
             "click",
             cargarListadoAholkulariak
@@ -1068,7 +1409,9 @@ function mostrarFormularioNuevoAholkularia() {
 
 
     document
-        .getElementById("btnCancelarNuevo")
+        .getElementById(
+            "btnCancelarNuevo"
+        )
         ?.addEventListener(
             "click",
             cargarListadoAholkulariak
@@ -1076,7 +1419,9 @@ function mostrarFormularioNuevoAholkularia() {
 
 
     document
-        .getElementById("nuevoAholkulariaForm")
+        .getElementById(
+            "nuevoAholkulariaForm"
+        )
         ?.addEventListener(
             "submit",
             crearAholkularia
@@ -1088,50 +1433,69 @@ function mostrarFormularioNuevoAholkularia() {
 // CREAR AHOLKULARIA
 // ============================================================
 
-async function crearAholkularia(event) {
+async function crearAholkularia(
+    event
+) {
 
     event.preventDefault();
+
 
     const button =
         document.getElementById(
             "btnCrearAholkularia"
         );
 
+
     const message =
         document.getElementById(
             "nuevoAholkulariaMessage"
         );
 
+
     const nombre =
         document.getElementById(
             "nuevoNombre"
-        )?.value.trim();
+        )?.value
+            .trim();
+
 
     const codigo =
         document.getElementById(
             "nuevoCodigo"
-        )?.value.trim();
+        )?.value
+            .trim();
+
 
     const berritzegune =
         document.getElementById(
             "nuevoBerritzegune"
-        )?.value.trim();
+        )?.value
+            .trim();
+
 
     const espezialitatea =
         document.getElementById(
             "nuevoEspecialidad"
         )?.value;
 
+
     const email =
         document.getElementById(
             "nuevoEmail"
-        )?.value.trim();
+        )?.value
+            .trim();
+
 
     const centrosTexto =
         document.getElementById(
             "nuevoCentros"
-        )?.value.trim();
+        )?.value
+            .trim();
 
+
+    // ----------------------------------------------------
+    // VALIDACIÓN
+    // ----------------------------------------------------
 
     if (
         !nombre ||
@@ -1151,19 +1515,34 @@ async function crearAholkularia(event) {
     }
 
 
+    // ----------------------------------------------------
+    // CENTROS
+    // ----------------------------------------------------
+
     const centros =
         centrosTexto
             ? centrosTexto
                 .split(",")
-                .map(valor => valor.trim())
-                .filter(Boolean)
+                .map(
+                    valor =>
+                        valor.trim()
+                )
+                .filter(
+                    Boolean
+                )
             : [];
 
 
+    // ----------------------------------------------------
+    // BOTÓN
+    // ----------------------------------------------------
+
     button.disabled = true;
+
 
     button.dataset.originalText =
         button.textContent;
+
 
     button.textContent =
         "Sortzen...";
@@ -1183,21 +1562,30 @@ async function crearAholkularia(event) {
         );
 
 
-        const { data, error } =
-            await window.hlbpSupabase.functions.invoke(
-                "create-aholkularia",
-                {
-                    body: {
-                        nombre,
-                        codigo,
-                        berritzegune,
-                        espezialitatea,
-                        email,
-                        centros
+        const {
+            data,
+            error
+        } =
+            await window.hlbpSupabase
+                .functions
+                .invoke(
+                    "create-aholkularia",
+                    {
+                        body: {
+                            nombre,
+                            codigo,
+                            berritzegune,
+                            espezialitatea,
+                            email,
+                            centros
+                        }
                     }
-                }
-            );
+                );
 
+
+        // ------------------------------------------------
+        // ERROR SUPABASE
+        // ------------------------------------------------
 
         if (error) {
 
@@ -1206,15 +1594,81 @@ async function crearAholkularia(event) {
                 error
             );
 
-            throw error;
+
+            let detalle =
+                error.message ||
+                "Errorea Edge Function-en.";
+
+
+            // Intentamos recuperar el body
+            // de un error HTTP de la función.
+
+            try {
+
+                if (
+                    error.context &&
+                    typeof error.context.json ===
+                        "function"
+                ) {
+
+                    const bodyError =
+                        await error.context.json();
+
+
+                    if (
+                        bodyError?.error
+                    ) {
+
+                        detalle =
+                            bodyError.error;
+                    }
+
+                    else if (
+                        bodyError?.message
+                    ) {
+
+                        detalle =
+                            bodyError.message;
+                    }
+                }
+
+            } catch (
+                lecturaError
+            ) {
+
+                console.warn(
+                    "No se pudo leer el detalle de Edge Function:",
+                    lecturaError
+                );
+            }
+
+
+            throw new Error(
+                detalle
+            );
         }
 
 
-        if (!data || data.error) {
+        // ------------------------------------------------
+        // RESPUESTA VACÍA
+        // ------------------------------------------------
+
+        if (!data) {
 
             throw new Error(
-                data?.error ||
-                "Ezin izan da Aholkularia sortu."
+                "Edge Function-ek ez du erantzunik itzuli."
+            );
+        }
+
+
+        // ------------------------------------------------
+        // ERROR DEVUELTO POR FUNCIÓN
+        // ------------------------------------------------
+
+        if (data.error) {
+
+            throw new Error(
+                data.error
             );
         }
 
@@ -1239,11 +1693,17 @@ async function crearAholkularia(event) {
             ?.reset();
 
 
+        // ------------------------------------------------
+        // VOLVER AL LISTADO
+        // ------------------------------------------------
+
         setTimeout(
             () => {
+
                 cargarListadoAholkulariak();
+
             },
-            1500
+            1200
         );
 
 
@@ -1257,12 +1717,16 @@ async function crearAholkularia(event) {
 
         mostrarFormularioMensaje(
             message,
-            obtenerMensajeError(error),
+            obtenerMensajeError(
+                error
+            ),
             "error"
         );
 
 
-        button.disabled = false;
+        button.disabled =
+            false;
+
 
         button.textContent =
             button.dataset.originalText ||
@@ -1275,25 +1739,40 @@ async function crearAholkularia(event) {
 // PERSONA - VISTA INDIVIDUAL
 // ============================================================
 
-async function cargarPersona(id) {
+async function cargarPersona(
+    id
+) {
 
     const pageContent =
         document.getElementById(
             "pageContent"
         );
 
-    if (!pageContent) return;
+
+    if (!pageContent) {
+        return;
+    }
 
 
     pageContent.innerHTML = `
+
         <div class="admin-loading">
+
             <div class="loading-spinner"></div>
-            <p>Aholkulariaren informazioa kargatzen...</p>
+
+            <p>
+                Aholkulariaren informazioa kargatzen...
+            </p>
+
         </div>
     `;
 
 
     try {
+
+        // ----------------------------------------------------
+        // PERFIL
+        // ----------------------------------------------------
 
         const {
             data: persona,
@@ -1312,7 +1791,10 @@ async function cargarPersona(id) {
                     espezialitatea,
                     activo
                 `)
-                .eq("id", id)
+                .eq(
+                    "id",
+                    id
+                )
                 .maybeSingle();
 
 
@@ -1329,6 +1811,12 @@ async function cargarPersona(id) {
         }
 
 
+        // ----------------------------------------------------
+        // REGISTROS
+        //
+        // Campos reales de PostgreSQL
+        // ----------------------------------------------------
+
         const {
             data: registros,
             error: registrosError
@@ -1338,28 +1826,39 @@ async function cargarPersona(id) {
                 .select(`
                     id,
                     aholkulari_id,
-                    fecha,
-                    fecha_fin,
                     centro_id,
                     tarea,
                     tipo,
                     subtipo,
                     estudiante_id,
                     zehaztu,
+                    fecha,
+                    fecha_fin,
                     estado,
                     observaciones,
-                    created_at
+                    created_at,
+                    updated_at
                 `)
-                .eq("aholkulari_id", id)
-                .order("fecha", {
-                    ascending: false
-                });
+                .eq(
+                    "aholkulari_id",
+                    id
+                )
+                .order(
+                    "fecha",
+                    {
+                        ascending: false
+                    }
+                );
 
 
         if (registrosError) {
             throw registrosError;
         }
 
+
+        // ----------------------------------------------------
+        // CENTROS ASIGNADOS
+        // ----------------------------------------------------
 
         const {
             data: relaciones,
@@ -1372,7 +1871,10 @@ async function cargarPersona(id) {
                     aholkulari_id,
                     centro_id
                 `)
-                .eq("aholkulari_id", id);
+                .eq(
+                    "aholkulari_id",
+                    id
+                );
 
 
         if (relacionesError) {
@@ -1407,10 +1909,16 @@ async function cargarPersona(id) {
                         zona,
                         activo
                     `)
-                    .in("id", centroIds)
-                    .order("codigo", {
-                        ascending: true
-                    });
+                    .in(
+                        "id",
+                        centroIds
+                    )
+                    .order(
+                        "codigo",
+                        {
+                            ascending: true
+                        }
+                    );
 
 
             if (error) {
@@ -1418,9 +1926,14 @@ async function cargarPersona(id) {
             }
 
 
-            centros = data || [];
+            centros =
+                data || [];
         }
 
+
+        // ----------------------------------------------------
+        // RENDER
+        // ----------------------------------------------------
 
         renderPersona(
             persona,
@@ -1438,6 +1951,7 @@ async function cargarPersona(id) {
 
 
         pageContent.innerHTML = `
+
             <div class="admin-panel">
 
                 <div class="admin-empty-state">
@@ -1446,15 +1960,20 @@ async function cargarPersona(id) {
                         ⚠️
                     </div>
 
+
                     <h3>
                         Ezin izan da informazioa kargatu
                     </h3>
 
+
                     <p>
                         ${escapeHtml(
-                            obtenerMensajeError(error)
+                            obtenerMensajeError(
+                                error
+                            )
                         )}
                     </p>
+
 
                     <button
                         type="button"
@@ -1487,7 +2006,10 @@ function renderPersona(
             "pageContent"
         );
 
-    if (!pageContent) return;
+
+    if (!pageContent) {
+        return;
+    }
 
 
     const nombre =
@@ -1510,9 +2032,11 @@ function renderPersona(
                         ${escapeHtml(nombre)}
                     </div>
 
+
                     <h1>
                         ${escapeHtml(nombre)}
                     </h1>
+
 
                     <p>
                         Aholkulariaren informazioa
@@ -1532,6 +2056,7 @@ function renderPersona(
                         ← Itzuli
                     </button>
 
+
                     <button
                         type="button"
                         class="admin-btn admin-btn-secondary"
@@ -1545,14 +2070,20 @@ function renderPersona(
             </div>
 
 
+            <!-- ========================================= -->
             <!-- DATOS PERSONA -->
+            <!-- ========================================= -->
 
             <div class="admin-panel">
 
                 <div class="admin-panel-header">
 
                     <div>
-                        <h2>Aholkulariaren datuak</h2>
+
+                        <h2>
+                            Aholkulariaren datuak
+                        </h2>
+
                     </div>
 
                 </div>
@@ -1561,62 +2092,100 @@ function renderPersona(
                 <div class="person-info-grid">
 
                     <div class="person-info-item">
-                        <span>Kodigoa</span>
+
+                        <span>
+                            Kodigoa
+                        </span>
+
                         <strong>
                             ${escapeHtml(
-                                persona.codigo || "—"
+                                persona.codigo ||
+                                "—"
                             )}
                         </strong>
+
                     </div>
 
 
                     <div class="person-info-item">
-                        <span>Izena</span>
-                        <strong>
-                            ${escapeHtml(nombre)}
-                        </strong>
-                    </div>
 
+                        <span>
+                            Izena
+                        </span>
 
-                    <div class="person-info-item">
-                        <span>Emaila</span>
                         <strong>
                             ${escapeHtml(
-                                persona.email || "—"
+                                nombre
                             )}
                         </strong>
+
                     </div>
 
 
                     <div class="person-info-item">
-                        <span>Kokapena</span>
+
+                        <span>
+                            Emaila
+                        </span>
+
                         <strong>
                             ${escapeHtml(
-                                persona.berritzegune || "—"
+                                persona.email ||
+                                "—"
                             )}
                         </strong>
+
                     </div>
 
 
                     <div class="person-info-item">
-                        <span>Espezialitatea</span>
+
+                        <span>
+                            Kokapena
+                        </span>
+
                         <strong>
                             ${escapeHtml(
-                                persona.espezialitatea || "—"
+                                persona.berritzegune ||
+                                "—"
                             )}
                         </strong>
+
                     </div>
 
 
                     <div class="person-info-item">
-                        <span>Zentroak</span>
+
+                        <span>
+                            Espezialitatea
+                        </span>
+
+                        <strong>
+                            ${escapeHtml(
+                                persona.espezialitatea ||
+                                "—"
+                            )}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="person-info-item">
+
+                        <span>
+                            Zentroak
+                        </span>
+
                         <strong>
                             ${centros.length}
                         </strong>
+
                     </div>
 
                 </div>
 
+
+                <!-- CENTROS -->
 
                 <div class="person-centers">
 
@@ -1624,31 +2193,40 @@ function renderPersona(
                         Esleitutako zentroak
                     </h3>
 
+
                     ${
                         centros.length
                             ? `
+
                                 <div class="person-center-list">
 
                                     ${centros
                                         .map(
                                             centro => `
+
                                                 <span class="admin-badge">
+
                                                     ${escapeHtml(
                                                         centro.codigo ||
                                                         centro.nombre ||
                                                         "—"
                                                     )}
+
                                                 </span>
+
                                             `
                                         )
                                         .join("")}
 
                                 </div>
+
                               `
                             : `
+
                                 <p class="admin-muted">
                                     Ez dago zentrorik esleituta.
                                 </p>
+
                               `
                     }
 
@@ -1657,7 +2235,9 @@ function renderPersona(
             </div>
 
 
+            <!-- ========================================= -->
             <!-- REGISTROS -->
+            <!-- ========================================= -->
 
             <div class="admin-panel">
 
@@ -1670,10 +2250,12 @@ function renderPersona(
                         </h2>
 
                         <p>
+
                             Guztira:
                             <strong>
                                 ${registros.length}
                             </strong>
+
                         </p>
 
                     </div>
@@ -1696,13 +2278,18 @@ function renderPersona(
 
 
     window.HLBPAdminPersona = {
+
         persona,
+
         registros,
+
         centros
+
     };
 
 
     inicializarFiltrosRegistros();
+
 
     renderTablaRegistros(
         registros
@@ -1719,6 +2306,7 @@ function renderFiltrosRegistros() {
     return `
 
         <div class="admin-filters admin-record-filters">
+
 
             <div class="admin-filter-group">
 
@@ -1862,197 +2450,273 @@ function renderFiltrosRegistros() {
 }
 
 
+// ============================================================
+// INICIALIZAR FILTROS
+// ============================================================
+
 function inicializarFiltrosRegistros() {
 
     const ids = [
+
         "recordSearch",
+
         "recordFechaDesde",
+
         "recordFechaHasta",
+
         "recordCentro",
+
         "recordTarea",
+
         "recordTipo",
+
         "recordSubtipo",
+
         "recordEstado"
+
     ];
 
 
-    ids.forEach(id => {
+    ids.forEach(
+        id => {
 
-        const elemento =
-            document.getElementById(id);
+            const elemento =
+                document.getElementById(
+                    id
+                );
 
-        if (!elemento) return;
 
-        elemento.addEventListener(
-            "input",
-            aplicarFiltrosRegistros
-        );
+            if (!elemento) {
+                return;
+            }
 
-        elemento.addEventListener(
-            "change",
-            aplicarFiltrosRegistros
-        );
-    });
+
+            elemento.addEventListener(
+                "input",
+                aplicarFiltrosRegistros
+            );
+
+
+            elemento.addEventListener(
+                "change",
+                aplicarFiltrosRegistros
+            );
+
+        }
+    );
 }
 
+
+// ============================================================
+// APLICAR FILTROS
+// ============================================================
 
 function aplicarFiltrosRegistros() {
 
     const registros =
         window.HLBPAdminPersona
-            ?.registros || [];
+            ?.registros ||
+        [];
 
 
     const texto =
         document.getElementById(
             "recordSearch"
         )?.value
-            .trim()
-            .toLowerCase() || "";
+            ?.trim()
+            .toLowerCase() ||
+        "";
 
 
     const fechaDesde =
         document.getElementById(
             "recordFechaDesde"
-        )?.value || "";
+        )?.value ||
+        "";
 
 
     const fechaHasta =
         document.getElementById(
             "recordFechaHasta"
-        )?.value || "";
+        )?.value ||
+        "";
 
 
     const centro =
         document.getElementById(
             "recordCentro"
         )?.value
-            .trim()
-            .toLowerCase() || "";
+            ?.trim()
+            .toLowerCase() ||
+        "";
 
 
     const tarea =
         document.getElementById(
             "recordTarea"
         )?.value
-            .trim()
-            .toLowerCase() || "";
+            ?.trim()
+            .toLowerCase() ||
+        "";
 
 
     const tipo =
         document.getElementById(
             "recordTipo"
         )?.value
-            .trim()
-            .toLowerCase() || "";
+            ?.trim()
+            .toLowerCase() ||
+        "";
 
 
     const subtipo =
         document.getElementById(
             "recordSubtipo"
         )?.value
-            .trim()
-            .toLowerCase() || "";
+            ?.trim()
+            .toLowerCase() ||
+        "";
 
 
     const estado =
         document.getElementById(
             "recordEstado"
-        )?.value || "";
+        )?.value ||
+        "";
 
 
     const filtrados =
-        registros.filter(registro => {
+        registros.filter(
+            registro => {
 
-            const valoresTexto = [
-                registro.fecha,
-                registro.fecha_fin,
-                registro.tarea,
-                registro.tipo,
-                registro.subtipo,
-                registro.estudiante_id,
-                registro.zehaztu,
-                registro.estado,
-                registro.observaciones
-            ]
-                .map(valor =>
-                    String(valor || "")
+                const valoresTexto = [
+
+                    registro.fecha,
+
+                    registro.fecha_fin,
+
+                    registro.tarea,
+
+                    registro.tipo,
+
+                    registro.subtipo,
+
+                    registro.estudiante_id,
+
+                    registro.zehaztu,
+
+                    registro.estado,
+
+                    registro.observaciones
+
+                ]
+                    .map(
+                        valor =>
+                            String(
+                                valor ||
+                                ""
+                            ).toLowerCase()
+                    )
+                    .join(" ");
+
+
+                const coincideTexto =
+                    !texto ||
+                    valoresTexto.includes(
+                        texto
+                    );
+
+
+                const fecha =
+                    registro.fecha ||
+                    "";
+
+
+                const coincideDesde =
+                    !fechaDesde ||
+                    fecha >= fechaDesde;
+
+
+                const coincideHasta =
+                    !fechaHasta ||
+                    fecha <= fechaHasta;
+
+
+                const coincideCentro =
+                    !centro ||
+                    String(
+                        registro.centro_id ||
+                        ""
+                    )
                         .toLowerCase()
-                )
-                .join(" ");
+                        .includes(
+                            centro
+                        );
 
 
-            const coincideTexto =
-                !texto ||
-                valoresTexto.includes(texto);
+                const coincideTarea =
+                    !tarea ||
+                    String(
+                        registro.tarea ||
+                        ""
+                    )
+                        .toLowerCase()
+                        .includes(
+                            tarea
+                        );
 
 
-            const fecha =
-                registro.fecha || "";
+                const coincideTipo =
+                    !tipo ||
+                    String(
+                        registro.tipo ||
+                        ""
+                    )
+                        .toLowerCase()
+                        .includes(
+                            tipo
+                        );
 
 
-            const coincideDesde =
-                !fechaDesde ||
-                fecha >= fechaDesde;
+                const coincideSubtipo =
+                    !subtipo ||
+                    String(
+                        registro.subtipo ||
+                        ""
+                    )
+                        .toLowerCase()
+                        .includes(
+                            subtipo
+                        );
 
 
-            const coincideHasta =
-                !fechaHasta ||
-                fecha <= fechaHasta;
+                const coincideEstado =
+                    !estado ||
+                    registro.estado ===
+                        estado;
 
 
-            const coincideCentro =
-                !centro ||
-                String(
-                    registro.centro_id || ""
-                )
-                    .toLowerCase()
-                    .includes(centro);
+                return (
 
+                    coincideTexto &&
 
-            const coincideTarea =
-                !tarea ||
-                String(
-                    registro.tarea || ""
-                )
-                    .toLowerCase()
-                    .includes(tarea);
+                    coincideDesde &&
 
+                    coincideHasta &&
 
-            const coincideTipo =
-                !tipo ||
-                String(
-                    registro.tipo || ""
-                )
-                    .toLowerCase()
-                    .includes(tipo);
+                    coincideCentro &&
 
+                    coincideTarea &&
 
-            const coincideSubtipo =
-                !subtipo ||
-                String(
-                    registro.subtipo || ""
-                )
-                    .toLowerCase()
-                    .includes(subtipo);
+                    coincideTipo &&
 
+                    coincideSubtipo &&
 
-            const coincideEstado =
-                !estado ||
-                registro.estado === estado;
+                    coincideEstado
 
-
-            return (
-                coincideTexto &&
-                coincideDesde &&
-                coincideHasta &&
-                coincideCentro &&
-                coincideTarea &&
-                coincideTipo &&
-                coincideSubtipo &&
-                coincideEstado
-            );
-        });
+                );
+            }
+        );
 
 
     renderTablaRegistros(
@@ -2065,28 +2729,36 @@ function aplicarFiltrosRegistros() {
 // TABLA REGISTROS
 // ============================================================
 
-function renderTablaRegistros(registros) {
+function renderTablaRegistros(
+    registros
+) {
 
     const container =
         document.getElementById(
             "personaRecordsContainer"
         );
 
-    if (!container) return;
+
+    if (!container) {
+        return;
+    }
 
 
     if (!registros.length) {
 
         container.innerHTML = `
+
             <div class="admin-empty-state">
 
                 <div class="admin-empty-icon">
                     📋
                 </div>
 
+
                 <h3>
                     Ez dago erregistrorik
                 </h3>
+
 
                 <p>
                     Ez da erregistrorik aurkitu
@@ -2101,80 +2773,105 @@ function renderTablaRegistros(registros) {
 
 
     const rows =
-        registros.map(registro => {
+        registros
+            .map(
+                registro => {
 
-            const estadoClass =
-                registro.estado === "Eginda"
-                    ? "admin-status-success"
-                    : "admin-status-pending";
-
-
-            return `
-                <tr>
-
-                    <td>
-                        ${escapeHtml(
-                            formatearFecha(
-                                registro.fecha
-                            )
-                        )}
-                    </td>
+                    const estadoClass =
+                        registro.estado ===
+                            "Eginda"
+                            ? "admin-status-success"
+                            : "admin-status-pending";
 
 
-                    <td>
-                        ${escapeHtml(
-                            registro.tarea || "—"
-                        )}
-                    </td>
+                    return `
+
+                        <tr>
+
+                            <td>
+
+                                ${escapeHtml(
+                                    formatearFecha(
+                                        registro.fecha
+                                    )
+                                )}
+
+                            </td>
 
 
-                    <td>
-                        ${escapeHtml(
-                            registro.tipo || "—"
-                        )}
-                    </td>
+                            <td>
+
+                                ${escapeHtml(
+                                    registro.tarea ||
+                                    "—"
+                                )}
+
+                            </td>
 
 
-                    <td>
-                        ${escapeHtml(
-                            registro.subtipo || "—"
-                        )}
-                    </td>
+                            <td>
+
+                                ${escapeHtml(
+                                    registro.tipo ||
+                                    "—"
+                                )}
+
+                            </td>
 
 
-                    <td>
-                        ${escapeHtml(
-                            registro.estudiante_id || "—"
-                        )}
-                    </td>
+                            <td>
+
+                                ${escapeHtml(
+                                    registro.subtipo ||
+                                    "—"
+                                )}
+
+                            </td>
 
 
-                    <td>
-                        <span class="${estadoClass}">
-                            ${escapeHtml(
-                                registro.estado || "—"
-                            )}
-                        </span>
-                    </td>
+                            <td>
+
+                                ${escapeHtml(
+                                    registro.estudiante_id ||
+                                    "—"
+                                )}
+
+                            </td>
 
 
-                    <td>
+                            <td>
 
-                        <button
-                            type="button"
-                            class="admin-btn admin-btn-small admin-btn-danger"
-                            onclick="eliminarRegistro('${escapeHtml(
-                                registro.id
-                            )}')"
-                        >
-                            EZABATU
-                        </button>
+                                <span class="${estadoClass}">
 
-                    </td>
+                                    ${escapeHtml(
+                                        registro.estado ||
+                                        "—"
+                                    )}
 
-                </tr>
-            `;
-        }).join("");
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <button
+                                    type="button"
+                                    class="admin-btn admin-btn-small admin-btn-danger"
+                                    onclick="eliminarRegistro('${escapeHtml(
+                                        registro.id
+                                    )}')"
+                                >
+                                    EZABATU
+                                </button>
+
+                            </td>
+
+                        </tr>
+                    `;
+                }
+            )
+            .join("");
 
 
     container.innerHTML = `
@@ -2186,19 +2883,44 @@ function renderTablaRegistros(registros) {
                 <thead>
 
                     <tr>
-                        <th>Data</th>
-                        <th>Eginkizuna</th>
-                        <th>Mota</th>
-                        <th>Azpi-mota</th>
-                        <th>Ikaslearen ID</th>
-                        <th>Egoera</th>
-                        <th>Ekintza</th>
+
+                        <th>
+                            Data
+                        </th>
+
+                        <th>
+                            Eginkizuna
+                        </th>
+
+                        <th>
+                            Mota
+                        </th>
+
+                        <th>
+                            Azpi-mota
+                        </th>
+
+                        <th>
+                            Ikaslearen ID
+                        </th>
+
+                        <th>
+                            Egoera
+                        </th>
+
+                        <th>
+                            Ekintza
+                        </th>
+
                     </tr>
 
                 </thead>
 
+
                 <tbody>
+
                     ${rows}
+
                 </tbody>
 
             </table>
@@ -2212,9 +2934,13 @@ function renderTablaRegistros(registros) {
 // ELIMINAR REGISTRO
 // ============================================================
 
-async function eliminarRegistro(id) {
+async function eliminarRegistro(
+    id
+) {
 
-    if (!id) return;
+    if (!id) {
+        return;
+    }
 
 
     const confirmar =
@@ -2223,7 +2949,9 @@ async function eliminarRegistro(id) {
         );
 
 
-    if (!confirmar) return;
+    if (!confirmar) {
+        return;
+    }
 
 
     try {
@@ -2234,7 +2962,10 @@ async function eliminarRegistro(id) {
             await window.hlbpSupabase
                 .from("registros")
                 .delete()
-                .eq("id", id);
+                .eq(
+                    "id",
+                    id
+                );
 
 
         if (error) {
@@ -2243,11 +2974,14 @@ async function eliminarRegistro(id) {
 
 
         window.HLBPAdminPersona.registros =
-            window.HLBPAdminPersona.registros.filter(
-                registro =>
-                    String(registro.id) !==
-                    String(id)
-            );
+            window.HLBPAdminPersona.registros
+                .filter(
+                    registro =>
+                        String(
+                            registro.id
+                        ) !==
+                        String(id)
+                );
 
 
         aplicarFiltrosRegistros();
@@ -2276,7 +3010,10 @@ async function descargarExcelGlobal() {
 
     try {
 
-        if (typeof XLSX === "undefined") {
+        if (
+            typeof XLSX ===
+            "undefined"
+        ) {
 
             alert(
                 "Excel esportatzeko liburutegia ez dago kargatuta."
@@ -2285,6 +3022,10 @@ async function descargarExcelGlobal() {
             return;
         }
 
+
+        // ----------------------------------------------------
+        // REGISTROS
+        // ----------------------------------------------------
 
         const {
             data: registros,
@@ -2305,17 +3046,25 @@ async function descargarExcelGlobal() {
                     fecha_fin,
                     estado,
                     observaciones,
-                    created_at
+                    created_at,
+                    updated_at
                 `)
-                .order("fecha", {
-                    ascending: false
-                });
+                .order(
+                    "fecha",
+                    {
+                        ascending: false
+                    }
+                );
 
 
         if (error) {
             throw error;
         }
 
+
+        // ----------------------------------------------------
+        // PERFILES
+        // ----------------------------------------------------
 
         const {
             data: perfiles,
@@ -2339,6 +3088,10 @@ async function descargarExcelGlobal() {
         }
 
 
+        // ----------------------------------------------------
+        // CENTROS
+        // ----------------------------------------------------
+
         const {
             data: centros,
             error: centrosError
@@ -2359,114 +3112,168 @@ async function descargarExcelGlobal() {
         }
 
 
+        // ----------------------------------------------------
+        // MAPA PERFILES
+        // ----------------------------------------------------
+
         const perfilesMap =
             new Map(
-                (perfiles || []).map(
-                    perfil => [
-                        String(perfil.id),
-                        perfil
-                    ]
-                )
+                (perfiles || [])
+                    .map(
+                        perfil => [
+
+                            String(
+                                perfil.id
+                            ),
+
+                            perfil
+
+                        ]
+                    )
             );
 
+
+        // ----------------------------------------------------
+        // MAPA CENTROS
+        // ----------------------------------------------------
 
         const centrosMap =
             new Map(
-                (centros || []).map(
-                    centro => [
-                        String(centro.id),
-                        centro
-                    ]
-                )
+                (centros || [])
+                    .map(
+                        centro => [
+
+                            String(
+                                centro.id
+                            ),
+
+                            centro
+
+                        ]
+                    )
             );
 
+
+        // ----------------------------------------------------
+        // FILAS EXCEL
+        // ----------------------------------------------------
 
         const filas =
-            (registros || []).map(
-                registro => {
+            (registros || [])
+                .map(
+                    registro => {
 
-                    const perfil =
-                        perfilesMap.get(
-                            String(
-                                registro.aholkulari_id
-                            )
-                        ) || {};
-
-
-                    const centro =
-                        centrosMap.get(
-                            String(
-                                registro.centro_id
-                            )
-                        ) || {};
+                        const perfil =
+                            perfilesMap.get(
+                                String(
+                                    registro.aholkulari_id
+                                )
+                            ) ||
+                            {};
 
 
-                    return {
+                        const centro =
+                            centrosMap.get(
+                                String(
+                                    registro.centro_id
+                                )
+                            ) ||
+                            {};
 
-                        "Aholkulariaren kodigoa":
-                            perfil.codigo || "",
 
-                        "Aholkularia":
-                            `${perfil.nombre || ""} ${perfil.apellidos || ""}`
-                                .trim(),
+                        return {
 
-                        "Emaila":
-                            perfil.email || "",
+                            "Aholkulariaren kodigoa":
+                                perfil.codigo ||
+                                "",
 
-                        "Berritzegunea":
-                            perfil.berritzegune || "",
+                            "Aholkularia":
+                                `${perfil.nombre || ""} ${perfil.apellidos || ""}`
+                                    .trim(),
 
-                        "Espezialitatea":
-                            perfil.espezialitatea || "",
+                            "Emaila":
+                                perfil.email ||
+                                "",
 
-                        "Zentroaren kodigoa":
-                            centro.codigo || "",
+                            "Berritzegunea":
+                                perfil.berritzegune ||
+                                "",
 
-                        "Zentroa":
-                            centro.nombre || "",
+                            "Espezialitatea":
+                                perfil.espezialitatea ||
+                                "",
 
-                        "Udalerria":
-                            centro.municipio || "",
+                            "Zentroaren kodigoa":
+                                centro.codigo ||
+                                "",
 
-                        "Zona":
-                            centro.zona || "",
+                            "Zentroa":
+                                centro.nombre ||
+                                "",
 
-                        "Eginkizuna":
-                            registro.tarea || "",
+                            "Udalerria":
+                                centro.municipio ||
+                                "",
 
-                        "Mota":
-                            registro.tipo || "",
+                            "Zona":
+                                centro.zona ||
+                                "",
 
-                        "Azpi-mota":
-                            registro.subtipo || "",
+                            "Eginkizuna":
+                                registro.tarea ||
+                                "",
 
-                        "Ikaslearen ID":
-                            registro.estudiante_id || "",
+                            "Mota":
+                                registro.tipo ||
+                                "",
 
-                        "Zehaztu":
-                            registro.zehaztu || "",
+                            "Azpi-mota":
+                                registro.subtipo ||
+                                "",
 
-                        "Egiteko data":
-                            registro.fecha || "",
+                            "Ikaslearen ID":
+                                registro.estudiante_id ||
+                                "",
 
-                        "Amaiera-data":
-                            registro.fecha_fin || "",
+                            "Zehaztu":
+                                registro.zehaztu ||
+                                "",
 
-                        "Egoera":
-                            registro.estado || "",
+                            "Egiteko data":
+                                registro.fecha ||
+                                "",
 
-                        "Oharrak":
-                            registro.observaciones || "",
+                            "Amaiera-data":
+                                registro.fecha_fin ||
+                                "",
 
-                        "Erregistro ID":
-                            registro.id || "",
+                            "Egoera":
+                                registro.estado ||
+                                "",
 
-                        "Sortze data":
-                            registro.created_at || ""
-                    };
-                }
-            );
+                            "Oharrak":
+                                registro.observaciones ||
+                                "",
 
+                            "Erregistro ID":
+                                registro.id ||
+                                "",
+
+                            "Sortze data":
+                                registro.created_at ||
+                                "",
+
+                            "Eguneratze data":
+                                registro.updated_at ||
+                                ""
+                        };
+                    }
+                );
+
+
+        // ----------------------------------------------------
+        // WORKSHEET
+        // ----------------------------------------------------
 
         const worksheet =
             XLSX.utils.json_to_sheet(
@@ -2475,28 +3282,55 @@ async function descargarExcelGlobal() {
 
 
         worksheet["!cols"] = [
+
             { wch: 18 },
+
             { wch: 28 },
+
             { wch: 32 },
+
             { wch: 22 },
+
             { wch: 20 },
+
             { wch: 18 },
+
             { wch: 35 },
+
             { wch: 20 },
+
             { wch: 20 },
+
             { wch: 35 },
+
             { wch: 25 },
+
             { wch: 30 },
+
             { wch: 20 },
+
             { wch: 30 },
+
             { wch: 15 },
+
             { wch: 15 },
+
             { wch: 15 },
+
             { wch: 50 },
-            { wch: 38 },
+
+            { wch: 20 },
+
+            { wch: 25 },
+
             { wch: 25 }
+
         ];
 
+
+        // ----------------------------------------------------
+        // WORKBOOK
+        // ----------------------------------------------------
 
         const workbook =
             XLSX.utils.book_new();
@@ -2509,10 +3343,17 @@ async function descargarExcelGlobal() {
         );
 
 
+        // ----------------------------------------------------
+        // DESCARGA
+        // ----------------------------------------------------
+
         const fecha =
             new Date()
                 .toISOString()
-                .slice(0, 10);
+                .slice(
+                    0,
+                    10
+                );
 
 
         XLSX.writeFile(
@@ -2544,7 +3385,10 @@ async function descargarExcelPersona() {
 
     try {
 
-        if (typeof XLSX === "undefined") {
+        if (
+            typeof XLSX ===
+            "undefined"
+        ) {
 
             alert(
                 "Excel esportatzeko liburutegia ez dago kargatuta."
@@ -2579,53 +3423,77 @@ async function descargarExcelPersona() {
                 registro => ({
 
                     "Aholkulariaren kodigoa":
-                        persona.codigo || "",
+                        persona.codigo ||
+                        "",
 
                     "Aholkularia":
                         `${persona.nombre || ""} ${persona.apellidos || ""}`
                             .trim(),
 
                     "Emaila":
-                        persona.email || "",
+                        persona.email ||
+                        "",
 
                     "Berritzegunea":
-                        persona.berritzegune || "",
+                        persona.berritzegune ||
+                        "",
 
                     "Espezialitatea":
-                        persona.espezialitatea || "",
+                        persona.espezialitatea ||
+                        "",
+
+                    "Zentro ID":
+                        registro.centro_id ||
+                        "",
 
                     "Eginkizuna":
-                        registro.tarea || "",
+                        registro.tarea ||
+                        "",
 
                     "Mota":
-                        registro.tipo || "",
+                        registro.tipo ||
+                        "",
 
                     "Azpi-mota":
-                        registro.subtipo || "",
+                        registro.subtipo ||
+                        "",
 
                     "Ikaslearen ID":
-                        registro.estudiante_id || "",
+                        registro.estudiante_id ||
+                        "",
 
                     "Zehaztu":
-                        registro.zehaztu || "",
+                        registro.zehaztu ||
+                        "",
 
                     "Egiteko data":
-                        registro.fecha || "",
+                        registro.fecha ||
+                        "",
 
                     "Amaiera-data":
-                        registro.fecha_fin || "",
+                        registro.fecha_fin ||
+                        "",
 
                     "Egoera":
-                        registro.estado || "",
+                        registro.estado ||
+                        "",
 
                     "Oharrak":
-                        registro.observaciones || "",
+                        registro.observaciones ||
+                        "",
 
                     "Erregistro ID":
-                        registro.id || "",
+                        registro.id ||
+                        "",
 
                     "Sortze data":
-                        registro.created_at || ""
+                        registro.created_at ||
+                        "",
+
+                    "Eguneratze data":
+                        registro.updated_at ||
+                        ""
+
                 })
             );
 
@@ -2634,6 +3502,47 @@ async function descargarExcelPersona() {
             XLSX.utils.json_to_sheet(
                 filas
             );
+
+
+        worksheet["!cols"] = [
+
+            { wch: 20 },
+
+            { wch: 28 },
+
+            { wch: 32 },
+
+            { wch: 22 },
+
+            { wch: 20 },
+
+            { wch: 12 },
+
+            { wch: 35 },
+
+            { wch: 25 },
+
+            { wch: 30 },
+
+            { wch: 20 },
+
+            { wch: 30 },
+
+            { wch: 15 },
+
+            { wch: 15 },
+
+            { wch: 15 },
+
+            { wch: 50 },
+
+            { wch: 20 },
+
+            { wch: 25 },
+
+            { wch: 25 }
+
+        ];
 
 
         const workbook =
@@ -2677,30 +3586,50 @@ async function descargarExcelPersona() {
 // BERRITZEGUNE OPTIONS
 // ============================================================
 
-function obtenerBerritzeguneOptions(personas) {
+function obtenerBerritzeguneOptions(
+    personas
+) {
 
     const valores =
-        [...new Set(
-            personas
-                .map(
-                    persona =>
-                        persona.berritzegune
-                )
-                .filter(Boolean)
-        )]
-        .sort(
-            (a, b) =>
-                String(a).localeCompare(
-                    String(b)
-                )
-        );
+        [
+            ...new Set(
+                personas
+                    .map(
+                        persona =>
+                            persona.berritzegune
+                    )
+                    .filter(
+                        Boolean
+                    )
+            )
+        ]
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    String(
+                        a
+                    ).localeCompare(
+                        String(
+                            b
+                        )
+                    )
+            );
 
 
     return valores
         .map(
             valor => `
-                <option value="${escapeHtml(valor)}">
-                    ${escapeHtml(valor)}
+
+                <option value="${escapeHtml(
+                    valor
+                )}">
+
+                    ${escapeHtml(
+                        valor
+                    )}
+
                 </option>
             `
         )
@@ -2718,40 +3647,61 @@ function mostrarFormularioMensaje(
     tipo
 ) {
 
-    if (!elemento) return;
+    if (!elemento) {
+        return;
+    }
+
 
     elemento.className =
         `admin-form-message ${tipo}`;
+
 
     elemento.textContent =
         texto;
 }
 
 
-function mostrarErrorAdministrazioa(error) {
+// ============================================================
+// ERROR GENERAL
+// ============================================================
+
+function mostrarErrorAdministrazioa(
+    error
+) {
 
     const app =
-        document.getElementById("app");
+        document.getElementById(
+            "app"
+        );
 
-    if (!app) return;
+
+    if (!app) {
+        return;
+    }
 
 
     app.innerHTML = `
+
         <div class="app-error-state">
 
             <div>
                 ⚠️
             </div>
 
+
             <h2>
                 Ezin izan da Administrazioa kargatu
             </h2>
 
+
             <p>
                 ${escapeHtml(
-                    obtenerMensajeError(error)
+                    obtenerMensajeError(
+                        error
+                    )
                 )}
             </p>
+
 
             <button
                 type="button"
@@ -2769,23 +3719,34 @@ function mostrarErrorAdministrazioa(error) {
 // UTILIDADES
 // ============================================================
 
-function formatearFecha(fecha) {
+function formatearFecha(
+    fecha
+) {
 
     if (!fecha) {
         return "—";
     }
 
+
     try {
 
         const partes =
-            String(fecha).split("-");
+            String(
+                fecha
+            ).split("-");
 
-        if (partes.length === 3) {
+
+        if (
+            partes.length ===
+            3
+        ) {
 
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
+
         return fecha;
+
 
     } catch {
 
@@ -2794,29 +3755,44 @@ function formatearFecha(fecha) {
 }
 
 
-function obtenerMensajeError(error) {
+// ============================================================
+// MENSAJE DE ERROR
+// ============================================================
+
+function obtenerMensajeError(
+    error
+) {
 
     if (!error) {
         return "Errore ezezaguna.";
     }
 
 
-    if (typeof error === "string") {
+    if (
+        typeof error ===
+        "string"
+    ) {
+
         return error;
     }
 
 
     if (error.message) {
+
         return error.message;
     }
 
 
-    if (error.error_description) {
+    if (
+        error.error_description
+    ) {
+
         return error.error_description;
     }
 
 
     if (error.details) {
+
         return error.details;
     }
 
@@ -2825,98 +3801,35 @@ function obtenerMensajeError(error) {
 }
 
 
-function escapeHtml(valor) {
-
-    return String(valor ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-
 // ============================================================
-// ARRANQUE DE PERSONA DESDE URL
+// ESCAPE HTML
 // ============================================================
 
-async function comprobarPersonaURL() {
+function escapeHtml(
+    valor
+) {
 
-    const parametros =
-        new URLSearchParams(
-            window.location.search
+    return String(
+        valor ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
         );
-
-
-    const personaId =
-        parametros.get("persona");
-
-
-    if (!personaId) {
-        return false;
-    }
-
-
-    await cargarPersona(
-        personaId
-    );
-
-
-    return true;
 }
-
-
-// ============================================================
-// SOBRESCRIBIMOS EL FLUJO PRINCIPAL
-// PARA SOPORTAR ?persona=ID
-// ============================================================
-
-const iniciarAdministrazioaOriginal =
-    iniciarAdministrazioa;
-
-
-// Reemplazamos el comportamiento inicial
-document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
-
-        // Este listener adicional solamente se encarga
-        // de abrir la ficha individual si existe ?persona=ID.
-
-        // El listener principal ya habrá cargado el layout.
-        setTimeout(
-            async () => {
-
-                const parametros =
-                    new URLSearchParams(
-                        window.location.search
-                    );
-
-                const personaId =
-                    parametros.get("persona");
-
-                if (!personaId) {
-                    return;
-                }
-
-                if (
-                    !window.HLBPSession?.profile
-                ) {
-                    return;
-                }
-
-                if (
-                    !window.HLBPSession.isAdminOrMaster()
-                ) {
-                    return;
-                }
-
-                await cargarPersona(
-                    personaId
-                );
-
-            },
-            100
-        );
-    }
-);
