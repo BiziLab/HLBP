@@ -7,10 +7,7 @@ document.addEventListener(
     async () => {
 
         const loginForm =
-            document.getElementById(
-                "loginForm"
-            );
-
+            document.getElementById("loginForm");
 
         if (!loginForm) {
             return;
@@ -23,7 +20,6 @@ document.addEventListener(
 
         const usuario =
             await obtenerUsuarioActual();
-
 
         if (usuario) {
 
@@ -45,12 +41,11 @@ document.addEventListener(
                 event.preventDefault();
 
 
-                const dni =
+                const email =
                     document
-                        .getElementById("dni")
+                        .getElementById("email")
                         .value
-                        .trim()
-                        .toUpperCase();
+                        .trim();
 
 
                 const password =
@@ -75,15 +70,13 @@ document.addEventListener(
 
                 try {
 
-                    const resultado =
-                        await iniciarSesion(
-                            dni,
-                            password
-                        );
+                    await iniciarSesion(
+                        email,
+                        password
+                    );
 
 
                     const perfil =
-                        resultado.profile ||
                         await obtenerPerfilActual();
 
 
@@ -99,7 +92,7 @@ document.addEventListener(
                     mostrarMensaje(
                         `Ongi etorri, ${
                             perfil.nombre ||
-                            dni
+                            email
                         }`
                     );
 
@@ -124,7 +117,7 @@ document.addEventListener(
 
 
                     mostrarError(
-                        "DNI edo pasahitza ez dira zuzenak."
+                        "Emaila edo pasahitza ez dira zuzenak."
                     );
 
 
@@ -139,17 +132,12 @@ document.addEventListener(
 );
 
 
-// ============================================================
-// Mensaje
-// ============================================================
-
 function mostrarMensaje(texto) {
 
     const elemento =
         document.getElementById(
             "loginMessage"
         );
-
 
     if (!elemento) {
         return;
@@ -165,17 +153,12 @@ function mostrarMensaje(texto) {
 }
 
 
-// ============================================================
-// Error
-// ============================================================
-
 function mostrarError(texto) {
 
     const elemento =
         document.getElementById(
             "loginMessage"
         );
-
 
     if (!elemento) {
         return;

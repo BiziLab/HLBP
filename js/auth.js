@@ -2,45 +2,21 @@
 // HLBP - Autenticación
 // ============================================================
 
-async function iniciarSesion(dni, password) {
+async function iniciarSesion(email, password) {
 
-    const dniNormalizado = dni
-        .trim()
-        .toUpperCase();
-
-    if (!dniNormalizado) {
-        throw new Error("Sartu zure DNIa.");
-    }
-
-    if (!password) {
-        throw new Error("Sartu zure pasahitza.");
-    }
-
-    // Supabase Auth utilizará internamente este email.
-    // El usuario nunca tiene que verlo.
-    const emailInterno =
-        `${dniNormalizado.toLowerCase()}@hlbp.local`;
-
-    const {
-        data,
-        error
-    } = await window.hlbpSupabase.auth.signInWithPassword({
-        email: emailInterno,
-        password: password
-    });
+    const { data, error } =
+        await window.hlbpSupabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
 
     if (error) {
-        console.error("Errorea saioa hastean:", error);
         throw error;
     }
 
     return data;
 }
 
-
-// ============================================================
-// CERRAR SESIÓN
-// ============================================================
 
 async function cerrarSesion() {
 
@@ -51,13 +27,9 @@ async function cerrarSesion() {
         throw error;
     }
 
-    window.location.href = "../index.html";
+    window.location.href = "index.html";
 }
 
-
-// ============================================================
-// OBTENER USUARIO ACTUAL
-// ============================================================
 
 async function obtenerUsuarioActual() {
 
@@ -67,11 +39,7 @@ async function obtenerUsuarioActual() {
     } = await window.hlbpSupabase.auth.getUser();
 
     if (error) {
-        console.error(
-            "Error obteniendo usuario:",
-            error
-        );
-
+        console.error("Error obteniendo usuario:", error);
         return null;
     }
 
@@ -79,35 +47,23 @@ async function obtenerUsuarioActual() {
 }
 
 
-// ============================================================
-// OBTENER PERFIL ACTUAL
-// ============================================================
-
 async function obtenerPerfilActual() {
 
-    const usuario =
-        await obtenerUsuarioActual();
+    const usuario = await obtenerUsuarioActual();
 
     if (!usuario) {
         return null;
     }
 
-    const {
-        data,
-        error
-    } = await window.hlbpSupabase
-        .from("profiles")
-        .select("*")
-        .eq("id", usuario.id)
-        .single();
+    const { data, error } =
+        await window.hlbpSupabase
+            .from("profiles")
+            .select("*")
+            .eq("id", usuario.id)
+            .single();
 
     if (error) {
-
-        console.error(
-            "Error obteniendo perfil:",
-            error
-        );
-
+        console.error("Error obteniendo perfil:", error);
         return null;
     }
 
