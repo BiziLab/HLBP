@@ -7,10 +7,11 @@ document.addEventListener(
     async () => {
 
         const loginForm =
-            document.getElementById("loginForm");
+            document.getElementById(
+                "loginForm"
+            );
 
-        // Si esta página no contiene el formulario de login,
-        // no hacemos nada.
+
         if (!loginForm) {
             return;
         }
@@ -22,6 +23,7 @@ document.addEventListener(
 
         const usuario =
             await obtenerUsuarioActual();
+
 
         if (usuario) {
 
@@ -43,15 +45,14 @@ document.addEventListener(
                 event.preventDefault();
 
 
-                // DNI
                 const dni =
                     document
                         .getElementById("dni")
                         .value
-                        .trim();
+                        .trim()
+                        .toUpperCase();
 
 
-                // Contraseña
                 const password =
                     document
                         .getElementById("password")
@@ -74,21 +75,15 @@ document.addEventListener(
 
                 try {
 
-                    // ------------------------------------------------
-                    // Iniciar sesión con DNI + contraseña
-                    // ------------------------------------------------
+                    const resultado =
+                        await iniciarSesion(
+                            dni,
+                            password
+                        );
 
-                    await iniciarSesion(
-                        dni,
-                        password
-                    );
-
-
-                    // ------------------------------------------------
-                    // Obtener perfil después del login
-                    // ------------------------------------------------
 
                     const perfil =
+                        resultado.profile ||
                         await obtenerPerfilActual();
 
 
@@ -97,25 +92,17 @@ document.addEventListener(
                         throw new Error(
                             "Ez da profilik aurkitu."
                         );
+
                     }
-
-
-                    console.log(
-                        "HLBP: login correcto:",
-                        perfil
-                    );
 
 
                     mostrarMensaje(
                         `Ongi etorri, ${
-                            perfil.nombre || dni
+                            perfil.nombre ||
+                            dni
                         }`
                     );
 
-
-                    // ------------------------------------------------
-                    // Redirección
-                    // ------------------------------------------------
 
                     setTimeout(
                         () => {
@@ -137,7 +124,7 @@ document.addEventListener(
 
 
                     mostrarError(
-                        "DNIa edo pasahitza ez dira zuzenak."
+                        "DNI edo pasahitza ez dira zuzenak."
                     );
 
 
@@ -153,7 +140,7 @@ document.addEventListener(
 
 
 // ============================================================
-// MENSAJE
+// Mensaje
 // ============================================================
 
 function mostrarMensaje(texto) {
@@ -163,12 +150,15 @@ function mostrarMensaje(texto) {
             "loginMessage"
         );
 
+
     if (!elemento) {
         return;
     }
 
+
     elemento.textContent =
         texto;
+
 
     elemento.className =
         "login-message";
@@ -176,7 +166,7 @@ function mostrarMensaje(texto) {
 
 
 // ============================================================
-// ERROR
+// Error
 // ============================================================
 
 function mostrarError(texto) {
@@ -186,12 +176,15 @@ function mostrarError(texto) {
             "loginMessage"
         );
 
+
     if (!elemento) {
         return;
     }
 
+
     elemento.textContent =
         texto;
+
 
     elemento.className =
         "login-message error";
