@@ -28,6 +28,9 @@ window.HLBPLayout = {
         const esAdminOMaster =
             window.HLBPSession?.isAdminOrMaster?.() || false;
 
+        const esAHL =
+            window.HLBPSession?.isAHL?.() || false;
+
         const paginaActual = this.obtenerPaginaActual();
 
         app.innerHTML = `
@@ -66,6 +69,9 @@ window.HLBPLayout = {
                             MENU NAGUSIA
                         </div>
 
+
+                        <!-- HASIERA -->
+
                         <a
                             href="dashboard.html"
                             class="nav-item ${paginaActual === "dashboard" ? "active" : ""}"
@@ -75,14 +81,25 @@ window.HLBPLayout = {
                         </a>
 
 
-                        <a
-                            href="erregistroa.html"
-                            class="nav-item ${paginaActual === "erregistroa" ? "active" : ""}"
-                        >
-                            <span class="nav-icon">＋</span>
-                            <span class="nav-label">Erregistroa</span>
-                        </a>
+                        <!-- ERREGISTROA
+                             SOLO PARA AHL -->
 
+                        ${
+                            esAHL
+                                ? `
+                                    <a
+                                        href="erregistroa.html"
+                                        class="nav-item ${paginaActual === "erregistroa" ? "active" : ""}"
+                                    >
+                                        <span class="nav-icon">＋</span>
+                                        <span class="nav-label">Erregistroa</span>
+                                    </a>
+                                `
+                                : ""
+                        }
+
+
+                        <!-- HISTORIALA -->
 
                         <a
                             href="historiala.html"
@@ -93,6 +110,8 @@ window.HLBPLayout = {
                         </a>
 
 
+                        <!-- ZENTROAK -->
+
                         <a
                             href="zentroak.html"
                             class="nav-item ${paginaActual === "zentroak" ? "active" : ""}"
@@ -101,6 +120,9 @@ window.HLBPLayout = {
                             <span class="nav-label">Zentroak</span>
                         </a>
 
+
+                        <!-- ADMINISTRAZIOA
+                             SOLO ADMIN / MASTER -->
 
                         ${
                             esAdminOMaster
