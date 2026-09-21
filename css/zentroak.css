@@ -1,0 +1,612 @@
+/* ============================================================
+   HLBP - ZENTROAK
+   ============================================================ */
+
+.zentroak-page {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.zentroak-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.zentroak-header-content {
+    min-width: 0;
+}
+
+.zentroak-breadcrumb {
+    margin-bottom: 10px;
+    color: #8a9097;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.zentroak-title-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.zentroak-title-icon {
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f7eaf5, #f0e1ef);
+    font-size: 24px;
+}
+
+.zentroak-header h1 {
+    margin: 0 0 5px;
+    color: #20252b;
+    font-size: 30px;
+    font-weight: 750;
+}
+
+.zentroak-header p {
+    margin: 0;
+    color: #737b84;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.zentroak-refresh {
+    border: 1px solid #ddd9df;
+    border-radius: 10px;
+    background: #fff;
+    color: #4c535a;
+    padding: 10px 15px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.zentroak-refresh:hover {
+    background: #faf8fa;
+    border-color: #cfc9d0;
+    transform: translateY(-1px);
+}
+
+
+/* ============================================================
+   ESTADÍSTICAS
+   ============================================================ */
+
+.zentroak-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.zentroak-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    padding: 18px 20px;
+    background: #fff;
+    border: 1px solid #e8e6e9;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(30, 30, 30, 0.035);
+}
+
+.zentroak-stat-icon {
+    width: 43px;
+    height: 43px;
+    flex: 0 0 43px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    background: #f6edf5;
+    color: #851976;
+    font-size: 18px;
+}
+
+.zentroak-stat-icon.active {
+    background: #edf8f1;
+    color: #217346;
+}
+
+.zentroak-stat-icon.inactive {
+    background: #f2f2f3;
+    color: #777d84;
+}
+
+.zentroak-stat-icon.location {
+    background: #f1f5fb;
+    color: #42627e;
+}
+
+.zentroak-stat-card span {
+    display: block;
+    margin-bottom: 3px;
+    color: #7a8189;
+    font-size: 12px;
+}
+
+.zentroak-stat-card strong {
+    display: block;
+    color: #252a30;
+    font-size: 23px;
+    line-height: 1.1;
+}
+
+
+/* ============================================================
+   PANEL
+   ============================================================ */
+
+.zentroak-panel {
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #e8e6e9;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(30, 30, 30, 0.035);
+}
+
+.zentroak-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 23px;
+    border-bottom: 1px solid #eeecef;
+}
+
+.zentroak-panel-header h2 {
+    margin: 0 0 4px;
+    color: #282d33;
+    font-size: 18px;
+}
+
+.zentroak-panel-header p {
+    margin: 0;
+    color: #858b92;
+    font-size: 12px;
+}
+
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+
+.zentroak-filters {
+    display: grid;
+    grid-template-columns:
+        minmax(280px, 2fr)
+        repeat(3, minmax(160px, 1fr));
+    gap: 13px;
+    padding: 19px 23px;
+    background: #fcfbfc;
+    border-bottom: 1px solid #eeecef;
+}
+
+.zentroak-search {
+    position: relative;
+}
+
+.zentroak-search-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8a9097;
+    font-size: 18px;
+    pointer-events: none;
+}
+
+.zentroak-search input,
+.zentroak-filter-group select {
+    width: 100%;
+    min-height: 43px;
+    box-sizing: border-box;
+    border: 1px solid #ddd9df;
+    border-radius: 10px;
+    background: #fff;
+    color: #30353b;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.zentroak-search input {
+    padding: 10px 13px 10px 39px;
+}
+
+.zentroak-search input::placeholder {
+    color: #9aa0a6;
+}
+
+.zentroak-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.zentroak-filter-group label {
+    color: #626970;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.zentroak-filter-group select {
+    padding: 10px 12px;
+}
+
+.zentroak-search input:hover,
+.zentroak-filter-group select:hover {
+    border-color: #c9c5cb;
+}
+
+.zentroak-search input:focus,
+.zentroak-filter-group select:focus {
+    border-color: #851976;
+    box-shadow: 0 0 0 3px rgba(133, 25, 118, 0.07);
+}
+
+
+/* ============================================================
+   TABLA
+   ============================================================ */
+
+.zentroak-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.zentroak-table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: collapse;
+}
+
+.zentroak-table th {
+    padding: 13px 16px;
+    background: #faf9fa;
+    color: #6c737b;
+    border-bottom: 1px solid #e9e7ea;
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.zentroak-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0eef1;
+    color: #353a40;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.zentroak-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.zentroak-table tbody tr:hover {
+    background: #fcfbfc;
+}
+
+.zentroak-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+
+/* ============================================================
+   CENTRO
+   ============================================================ */
+
+.zentroa-name {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 260px;
+}
+
+.zentroa-avatar {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: #f6edf5;
+    font-size: 17px;
+}
+
+.zentroa-name strong {
+    display: block;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #282d33;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.zentroa-name span {
+    display: block;
+    margin-top: 3px;
+    color: #92989e;
+    font-size: 10px;
+}
+
+.zentroa-code {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    border-radius: 7px;
+    background: #f5f3f5;
+    color: #5c6269;
+    font-size: 12px;
+    font-weight: 700;
+    font-family:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        Consolas,
+        monospace;
+}
+
+.zentroa-tag {
+    display: inline-flex;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #f1f5fb;
+    color: #42627e;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.zentroa-number {
+    display: inline-flex;
+    min-width: 30px;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+    border-radius: 7px;
+    background: #f7f6f7;
+    color: #4e555c;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.zentroa-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.zentroa-status > span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.zentroa-status.active {
+    background: #eaf6ee;
+    color: #267243;
+}
+
+.zentroa-status.active > span {
+    background: #267243;
+}
+
+.zentroa-status.inactive {
+    background: #f1f1f2;
+    color: #777d84;
+}
+
+.zentroa-status.inactive > span {
+    background: #8b9197;
+}
+
+.zentroa-muted {
+    color: #a0a5aa;
+}
+
+
+/* ============================================================
+   VACÍO
+   ============================================================ */
+
+.zentroak-empty {
+    padding: 65px 20px !important;
+    text-align: center !important;
+    color: #858b91 !important;
+}
+
+.zentroak-empty-icon {
+    margin-bottom: 10px;
+    font-size: 27px;
+}
+
+.zentroak-empty strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #4c535a;
+    font-size: 15px;
+}
+
+.zentroak-empty span {
+    font-size: 12px;
+}
+
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+
+.zentroak-loading {
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #858b91;
+}
+
+.zentroak-spinner {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 12px;
+    border: 3px solid #eee9ee;
+    border-top-color: #851976;
+    border-radius: 50%;
+    animation: zentroak-spin 0.8s linear infinite;
+}
+
+@keyframes zentroak-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* ============================================================
+   ERROR
+   ============================================================ */
+
+.zentroak-error-page {
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    background: #fff;
+    border: 1px solid #e8e6e9;
+    border-radius: 14px;
+    text-align: center;
+}
+
+.zentroak-error-icon {
+    margin-bottom: 13px;
+    font-size: 34px;
+}
+
+.zentroak-error-page h2 {
+    margin: 0 0 7px;
+    color: #2c3137;
+    font-size: 19px;
+}
+
+.zentroak-error-page p {
+    max-width: 600px;
+    margin: 0 0 20px;
+    color: #7b8289;
+    font-size: 13px;
+}
+
+.zentroak-error-button {
+    border: 0;
+    border-radius: 9px;
+    background: #851976;
+    color: #fff;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.zentroak-error-button:hover {
+    background: #721664;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1150px) {
+
+    .zentroak-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .zentroak-filters {
+        grid-template-columns:
+            minmax(250px, 2fr)
+            repeat(2, minmax(170px, 1fr));
+    }
+
+    .zentroak-search {
+        grid-column: 1 / -1;
+    }
+}
+
+
+@media (max-width: 800px) {
+
+    .zentroak-header {
+        flex-direction: column;
+    }
+
+    .zentroak-refresh {
+        align-self: flex-start;
+    }
+
+    .zentroak-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .zentroak-filters {
+        grid-template-columns: 1fr;
+        padding: 18px;
+    }
+
+    .zentroak-search {
+        grid-column: auto;
+    }
+}
+
+
+@media (max-width: 520px) {
+
+    .zentroak-header h1 {
+        font-size: 25px;
+    }
+
+    .zentroak-title-icon {
+        width: 45px;
+        height: 45px;
+        flex-basis: 45px;
+    }
+
+    .zentroak-title-row {
+        gap: 11px;
+    }
+
+    .zentroak-panel-header {
+        padding: 18px;
+    }
+
+}
