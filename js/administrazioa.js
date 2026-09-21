@@ -324,9 +324,6 @@ async function cargarListadoAholkulariak() {
 
         // ----------------------------------------------------
         // REGISTROS
-        //
-        // ESQUEMA REAL:
-        // registros.aholkulari_id
         // ----------------------------------------------------
 
         const {
@@ -372,16 +369,6 @@ async function cargarListadoAholkulariak() {
 
         // ----------------------------------------------------
         // CENTROS
-        //
-        // ESQUEMA REAL:
-        // id
-        // codigo
-        // nombre
-        // activo
-        //
-        // NO existen:
-        // municipio
-        // zona
         // ----------------------------------------------------
 
         const {
@@ -443,7 +430,6 @@ async function cargarListadoAholkulariak() {
                         );
 
 
-                    // Registros de esta persona
                     const registrosPersona =
                         (
                             registros || []
@@ -455,7 +441,6 @@ async function cargarListadoAholkulariak() {
                         );
 
 
-                    // Relaciones de centros
                     const relacionesPersona =
                         (
                             relacionesCentros || []
@@ -467,7 +452,6 @@ async function cargarListadoAholkulariak() {
                         );
 
 
-                    // Centros de la persona
                     const centrosPersona =
                         relacionesPersona
                             .map(
@@ -601,8 +585,6 @@ function renderListado(
 
     container.innerHTML = `
 
-        <!-- RESUMEN -->
-
         <div class="admin-summary">
 
             <div class="admin-stat-card">
@@ -669,8 +651,6 @@ function renderListado(
 
         </div>
 
-
-        <!-- FILTROS -->
 
         <div class="admin-panel">
 
@@ -1209,6 +1189,8 @@ function mostrarFormularioNuevoAholkularia() {
                     <div class="admin-form-grid">
 
 
+                        <!-- IZENA -->
+
                         <div class="admin-form-group">
 
                             <label for="nuevoNombre">
@@ -1225,6 +1207,27 @@ function mostrarFormularioNuevoAholkularia() {
 
                         </div>
 
+
+                        <!-- ABIZENAK -->
+
+                        <div class="admin-form-group">
+
+                            <label for="nuevoApellidos">
+                                Abizenak *
+                            </label>
+
+                            <input
+                                type="text"
+                                id="nuevoApellidos"
+                                class="admin-input"
+                                required
+                                autocomplete="off"
+                            >
+
+                        </div>
+
+
+                        <!-- KODIGOA -->
 
                         <div class="admin-form-group">
 
@@ -1243,6 +1246,8 @@ function mostrarFormularioNuevoAholkularia() {
                         </div>
 
 
+                        <!-- BERRITZEGUNE -->
+
                         <div class="admin-form-group">
 
                             <label for="nuevoBerritzegune">
@@ -1259,6 +1264,8 @@ function mostrarFormularioNuevoAholkularia() {
 
                         </div>
 
+
+                        <!-- ESPEZIALITATEA -->
 
                         <div class="admin-form-group">
 
@@ -1293,7 +1300,9 @@ function mostrarFormularioNuevoAholkularia() {
                         </div>
 
 
-                        <div class="admin-form-group admin-form-full">
+                        <!-- EMAIL -->
+
+                        <div class="admin-form-group">
 
                             <label for="nuevoEmail">
                                 Emaila *
@@ -1309,13 +1318,16 @@ function mostrarFormularioNuevoAholkularia() {
                             >
 
                             <small>
-                                Helbide honetan jasoko du
-                                Aholkulariak kontua aktibatzeko
-                                gonbidapena.
+                                Email hau izango da
+                                Aholkulariak saioa hasteko
+                                erabiliko duen erabiltzailea.
+                                Ez da gonbidapenik bidaliko.
                             </small>
 
                         </div>
 
+
+                        <!-- CENTROS -->
 
                         <div class="admin-form-group admin-form-full">
 
@@ -1431,9 +1443,19 @@ async function crearAholkularia(
         );
 
 
+    // --------------------------------------------------------
+    // DATOS
+    // --------------------------------------------------------
+
     const nombre =
         document.getElementById(
             "nuevoNombre"
+        )?.value.trim();
+
+
+    const apellidos =
+        document.getElementById(
+            "nuevoApellidos"
         )?.value.trim();
 
 
@@ -1475,6 +1497,7 @@ async function crearAholkularia(
 
     if (
         !nombre ||
+        !apellidos ||
         !codigo ||
         !berritzegune ||
         !espezialitatea ||
@@ -1484,6 +1507,28 @@ async function crearAholkularia(
         mostrarFormularioMensaje(
             message,
             "Bete derrigorrezko eremu guztiak.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // VALIDAR EMAIL
+    // --------------------------------------------------------
+
+    const emailRegex =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+
+    if (
+        !emailRegex.test(email)
+    ) {
+
+        mostrarFormularioMensaje(
+            message,
+            "Email helbideak ez du formatu zuzena.",
             "error"
         );
 
@@ -1520,6 +1565,7 @@ async function crearAholkularia(
 
         button.textContent =
             "Sortzen...";
+
     }
 
 
@@ -1538,7 +1584,7 @@ async function crearAholkularia(
 
 
         // ----------------------------------------------------
-        // INVOCAR EDGE FUNCTION
+        // EDGE FUNCTION
         // ----------------------------------------------------
 
         const {
@@ -1549,19 +1595,28 @@ async function crearAholkularia(
                 "create-aholkularia",
                 {
                     body: {
+
                         nombre,
+
+                        apellidos,
+
                         codigo,
+
                         berritzegune,
+
                         espezialitatea,
+
                         email,
+
                         centros
+
                     }
                 }
             );
 
 
         // ----------------------------------------------------
-        // ERROR EDGE FUNCTION
+        // ERROR
         // ----------------------------------------------------
 
         if (error) {
@@ -1572,7 +1627,6 @@ async function crearAholkularia(
             );
 
 
-            // Intentamos mostrar información más útil.
             let mensaje =
                 error.message ||
                 "Ezin izan da Aholkularia sortu.";
@@ -1594,12 +1648,16 @@ async function crearAholkularia(
 
 
                     if (body?.error) {
+
                         mensaje =
                             body.error;
+
                     }
 
                 } catch {
-                    // Ignorar si no es JSON.
+
+                    // Ignorar error de parseo.
+
                 }
 
             }
@@ -1624,6 +1682,7 @@ async function crearAholkularia(
                 data?.error ||
                 "Ezin izan da Aholkularia sortu."
             );
+
         }
 
 
@@ -1634,15 +1693,167 @@ async function crearAholkularia(
 
 
         // ----------------------------------------------------
-        // ÉXITO
+        // CONTRASEÑA INICIAL
         // ----------------------------------------------------
 
-        mostrarFormularioMensaje(
-            message,
-            "Aholkularia behar bezala sortu da. Gonbidapena bidali da.",
-            "success"
-        );
+        const initialPassword =
+            data.initialPassword || "";
 
+
+        // ----------------------------------------------------
+        // MOSTRAR RESULTADO
+        // ----------------------------------------------------
+
+        message.className =
+            "admin-form-message success";
+
+
+        message.innerHTML = `
+
+            <div style="
+                display:flex;
+                flex-direction:column;
+                gap:12px;
+            ">
+
+                <strong>
+                    ✅ Aholkularia behar bezala sortu da.
+                </strong>
+
+
+                <div>
+                    <strong>
+                        Emaila:
+                    </strong>
+
+                    ${escapeHtml(
+                        email
+                    )}
+                </div>
+
+
+                <div>
+
+                    <strong>
+                        Hasierako pasahitza:
+                    </strong>
+
+
+                    <div style="
+                        display:flex;
+                        align-items:center;
+                        gap:8px;
+                        margin-top:6px;
+                        flex-wrap:wrap;
+                    ">
+
+                        <code
+                            id="initialPasswordValue"
+                            style="
+                                padding:8px 12px;
+                                border-radius:6px;
+                                background:#f3f3f3;
+                                font-size:15px;
+                                font-weight:700;
+                            "
+                        >
+                            ${escapeHtml(
+                                initialPassword
+                            )}
+                        </code>
+
+
+                        <button
+                            type="button"
+                            class="admin-btn admin-btn-small admin-btn-secondary"
+                            id="btnCopyInitialPassword"
+                        >
+                            📋 Kopiatu
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <small>
+                    Ez da emailik bidali.
+                    Aholkulariak email honekin eta
+                    goiko hasierako pasahitzarekin
+                    sartu beharko du.
+                </small>
+
+            </div>
+
+        `;
+
+
+        // ----------------------------------------------------
+        // COPIAR PASSWORD
+        // ----------------------------------------------------
+
+        document
+            .getElementById(
+                "btnCopyInitialPassword"
+            )
+            ?.addEventListener(
+                "click",
+                async () => {
+
+                    try {
+
+                        await navigator
+                            .clipboard
+                            .writeText(
+                                initialPassword
+                            );
+
+
+                        const copyButton =
+                            document.getElementById(
+                                "btnCopyInitialPassword"
+                            );
+
+
+                        if (copyButton) {
+
+                            copyButton.textContent =
+                                "✅ Kopiatuta";
+
+
+                            setTimeout(
+                                () => {
+
+                                    copyButton.textContent =
+                                        "📋 Kopiatu";
+
+                                },
+                                2000
+                            );
+
+                        }
+
+                    } catch (copyError) {
+
+                        console.error(
+                            "Error copiando contraseña:",
+                            copyError
+                        );
+
+
+                        alert(
+                            `Hasierako pasahitza: ${initialPassword}`
+                        );
+
+                    }
+
+                }
+            );
+
+
+        // ----------------------------------------------------
+        // LIMPIAR FORMULARIO
+        // ----------------------------------------------------
 
         document
             .getElementById(
@@ -1651,14 +1862,20 @@ async function crearAholkularia(
             ?.reset();
 
 
-        setTimeout(
-            () => {
+        // ----------------------------------------------------
+        // RESTAURAR BOTÓN
+        // ----------------------------------------------------
 
-                cargarListadoAholkulariak();
+        if (button) {
 
-            },
-            1500
-        );
+            button.disabled =
+                false;
+
+            button.textContent =
+                button.dataset.originalText ||
+                "➕ Gehitu Aholkularia";
+
+        }
 
 
     } catch (error) {
@@ -1686,6 +1903,7 @@ async function crearAholkularia(
             button.textContent =
                 button.dataset.originalText ||
                 "➕ Gehitu Aholkularia";
+
         }
     }
 }
@@ -1768,10 +1986,6 @@ async function cargarPersona(
 
         // ----------------------------------------------------
         // REGISTROS
-        //
-        // ESQUEMA REAL:
-        // aholkulari_id
-        // estudiante_id
         // ----------------------------------------------------
 
         const {
@@ -2041,8 +2255,6 @@ function renderPersona(
             </div>
 
 
-            <!-- DATOS PERSONA -->
-
             <div class="admin-panel">
 
                 <div class="admin-panel-header">
@@ -2198,8 +2410,6 @@ function renderPersona(
             </div>
 
 
-            <!-- REGISTROS -->
-
             <div class="admin-panel">
 
                 <div class="admin-panel-header">
@@ -2236,10 +2446,6 @@ function renderPersona(
         </div>
     `;
 
-
-    // --------------------------------------------------------
-    // GUARDAR ESTADO
-    // --------------------------------------------------------
 
     window.HLBPAdminPersona = {
 
@@ -2541,10 +2747,6 @@ function aplicarFiltrosRegistros() {
         )?.value || "";
 
 
-    // --------------------------------------------------------
-    // MAPA CENTROS
-    // --------------------------------------------------------
-
     const centrosMap =
         new Map();
 
@@ -2560,10 +2762,6 @@ function aplicarFiltrosRegistros() {
         }
     );
 
-
-    // --------------------------------------------------------
-    // FILTRAR
-    // --------------------------------------------------------
 
     const filtrados =
         registros.filter(
@@ -3064,10 +3262,6 @@ async function descargarExcelGlobal() {
         await asegurarXLSX();
 
 
-        // ----------------------------------------------------
-        // REGISTROS
-        // ----------------------------------------------------
-
         const {
             data: registros,
             error: registrosError
@@ -3102,10 +3296,6 @@ async function descargarExcelGlobal() {
         }
 
 
-        // ----------------------------------------------------
-        // PERFILES
-        // ----------------------------------------------------
-
         const {
             data: perfiles,
             error: perfilesError
@@ -3128,10 +3318,6 @@ async function descargarExcelGlobal() {
         }
 
 
-        // ----------------------------------------------------
-        // CENTROS
-        // ----------------------------------------------------
-
         const {
             data: centros,
             error: centrosError
@@ -3150,10 +3336,6 @@ async function descargarExcelGlobal() {
             throw centrosError;
         }
 
-
-        // ----------------------------------------------------
-        // MAPAS
-        // ----------------------------------------------------
 
         const perfilesMap =
             new Map(
@@ -3190,10 +3372,6 @@ async function descargarExcelGlobal() {
                 )
             );
 
-
-        // ----------------------------------------------------
-        // FILAS EXCEL
-        // ----------------------------------------------------
 
         const filas =
             (
@@ -3283,10 +3461,6 @@ async function descargarExcelGlobal() {
             );
 
 
-        // ----------------------------------------------------
-        // WORKSHEET
-        // ----------------------------------------------------
-
         const worksheet =
             XLSX.utils.json_to_sheet(
                 filas
@@ -3296,45 +3470,25 @@ async function descargarExcelGlobal() {
         worksheet["!cols"] = [
 
             { wch: 18 },
-
             { wch: 28 },
-
             { wch: 32 },
-
             { wch: 22 },
-
             { wch: 20 },
-
             { wch: 18 },
-
             { wch: 35 },
-
             { wch: 35 },
-
             { wch: 25 },
-
             { wch: 30 },
-
             { wch: 20 },
-
             { wch: 30 },
-
             { wch: 15 },
-
             { wch: 15 },
-
             { wch: 15 },
-
             { wch: 50 },
-
             { wch: 38 }
 
         ];
 
-
-        // ----------------------------------------------------
-        // WORKBOOK
-        // ----------------------------------------------------
 
         const workbook =
             XLSX.utils.book_new();
@@ -3346,10 +3500,6 @@ async function descargarExcelGlobal() {
             "Erregistroak"
         );
 
-
-        // ----------------------------------------------------
-        // DESCARGA
-        // ----------------------------------------------------
 
         const fecha =
             new Date()
