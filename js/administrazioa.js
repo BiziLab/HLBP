@@ -1030,16 +1030,46 @@ function renderTablaAholkulariak(
 
                         <td>
 
-                            <button
-                                type="button"
-                                class="admin-btn admin-btn-small admin-btn-secondary"
-                                data-persona-id="${escapeHtml(
-                                    persona.id
-                                )}"
-                                onclick="abrirPersonaDesdeBoton(this)"
-                            >
-                                IKUSI
-                            </button>
+                            <div style="
+                                display:flex;
+                                gap:8px;
+                                flex-wrap:wrap;
+                                align-items:center;
+                            ">
+
+                                <button
+                                    type="button"
+                                    class="admin-btn admin-btn-small admin-btn-secondary"
+                                    data-persona-id="${escapeHtml(
+                                        persona.id
+                                    )}"
+                                    onclick="abrirPersonaDesdeBoton(this)"
+                                >
+                                    IKUSI
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="admin-btn admin-btn-small admin-btn-danger"
+                                    data-persona-id="${escapeHtml(
+                                        persona.id
+                                    )}"
+                                    data-persona-name="${escapeHtml(
+                                        `${
+                                            persona.nombre || ""
+                                        } ${
+                                            persona.apellidos || ""
+                                        }`.trim() ||
+                                        persona.email ||
+                                        "Aholkularia"
+                                    )}"
+                                    onclick="eliminarAholkulariaDesdeBoton(this)"
+                                >
+                                    🗑️ EZABATU
+                                </button>
+
+                            </div>
 
                         </td>
 
@@ -1101,6 +1131,244 @@ function abrirPersonaDesdeBoton(
         `administrazioa.html?persona=${encodeURIComponent(
             id
         )}`;
+}
+
+
+// ============================================================
+// BOTÓN ELIMINAR AHOLKULARIA
+// ============================================================
+
+async function eliminarAholkulariaDesdeBoton(
+    button
+) {
+
+    const userId =
+        button.dataset.personaId;
+
+
+    const nombre =
+        button.dataset.personaName ||
+        "Aholkularia";
+
+
+    if (!userId) {
+
+        alert(
+            "Ez da erabiltzailearen IDa aurkitu."
+        );
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // PRIMERA CONFIRMACIÓN
+    // --------------------------------------------------------
+
+    const confirmar =
+        window.confirm(
+
+            `⚠️ ADI!\n\n` +
+
+            `“${nombre}” Aholkularia ezabatzera zoaz.\n\n` +
+
+            `Ekintza honek erabiltzailearen kontua eta bere datu guztiak ezabatuko ditu:\n\n` +
+
+            `• Erregistro guztiak\n` +
+            `• Zentroen esleipenak\n` +
+            `• Profil administratiboa\n` +
+            `• Saioa hasteko kontua\n\n` +
+
+            `Ekintza hau EZIN DA desegin.\n\n` +
+
+            `Jarraitu nahi duzu?`
+
+        );
+
+
+    if (!confirmar) {
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // BIGARREN CONFIRMACIÓN
+    // --------------------------------------------------------
+
+    const confirmarDefinitivo =
+        window.confirm(
+
+            `AZKEN BAIEZTAPENA\n\n` +
+
+            `“${nombre}” erabiltzailea eta bere datu guztiak behin betiko ezabatuko dira.\n\n` +
+
+            `Benetan ezabatu nahi duzu?`
+
+        );
+
+
+    if (!confirmarDefinitivo) {
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // BOTÓN
+    // --------------------------------------------------------
+
+    const textoOriginal =
+        button.textContent;
+
+
+    button.disabled =
+        true;
+
+
+    button.textContent =
+        "Ezabatzen...";
+
+
+    try {
+
+        console.log(
+            "HLBP: delete-aholkularia invoke...",
+            userId
+        );
+
+
+        // ----------------------------------------------------
+        // EDGE FUNCTION
+        // ----------------------------------------------------
+
+        const {
+            data,
+            error
+        } =
+            await window.hlbpSupabase.functions.invoke(
+                "delete-aholkularia",
+                {
+                    body: {
+                        userId
+                    }
+                }
+            );
+
+
+        // ----------------------------------------------------
+        // ERROR
+        // ----------------------------------------------------
+
+        if (error) {
+
+            console.error(
+                "Delete Edge Function error:",
+                error
+            );
+
+
+            let mensaje =
+                error.message ||
+                "Ezin izan da Aholkularia ezabatu.";
+
+
+            if (
+                error.context?.body
+            ) {
+
+                try {
+
+                    const body =
+                        typeof error.context.body ===
+                            "string"
+                            ? JSON.parse(
+                                error.context.body
+                            )
+                            : error.context.body;
+
+
+                    if (body?.error) {
+
+                        mensaje =
+                            body.error;
+
+                    }
+
+                } catch {
+
+                    // Ignorar error de parseo.
+
+                }
+
+            }
+
+
+            throw new Error(
+                mensaje
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // COMPROBAR RESPUESTA
+        // ----------------------------------------------------
+
+        if (
+            !data ||
+            data.success !== true
+        ) {
+
+            throw new Error(
+                data?.error ||
+                "Ezin izan da Aholkularia ezabatu."
+            );
+
+        }
+
+
+        console.log(
+            "HLBP: Aholkularia ezabatuta:",
+            data
+        );
+
+
+        // ----------------------------------------------------
+        // CONFIRMACIÓN
+        // ----------------------------------------------------
+
+        alert(
+            `✅ ${nombre} Aholkularia eta bere datu guztiak behar bezala ezabatu dira.`
+        );
+
+
+        // ----------------------------------------------------
+        // RECARGAR LISTADO
+        // ----------------------------------------------------
+
+        await cargarListadoAholkulariak();
+
+
+    } catch (error) {
+
+        console.error(
+            "Errorea Aholkularia ezabatzean:",
+            error
+        );
+
+
+        alert(
+            obtenerMensajeError(
+                error
+            )
+        );
+
+
+        button.disabled =
+            false;
+
+
+        button.textContent =
+            textoOriginal;
+    }
 }
 
 
@@ -3151,7 +3419,7 @@ function renderTablaRegistros(
 
 
 // ============================================================
-// BOTÓN ELIMINAR
+// BOTÓN ELIMINAR REGISTRO
 // ============================================================
 
 function eliminarRegistroDesdeBoton(
