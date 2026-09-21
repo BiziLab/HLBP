@@ -9,6 +9,8 @@ document.addEventListener(
         const loginForm =
             document.getElementById("loginForm");
 
+        // Si esta página no contiene el formulario de login,
+        // no hacemos nada.
         if (!loginForm) {
             return;
         }
@@ -41,13 +43,15 @@ document.addEventListener(
                 event.preventDefault();
 
 
-                const email =
+                // DNI
+                const dni =
                     document
-                        .getElementById("email")
+                        .getElementById("dni")
                         .value
                         .trim();
 
 
+                // Contraseña
                 const password =
                     document
                         .getElementById("password")
@@ -70,11 +74,19 @@ document.addEventListener(
 
                 try {
 
+                    // ------------------------------------------------
+                    // Iniciar sesión con DNI + contraseña
+                    // ------------------------------------------------
+
                     await iniciarSesion(
-                        email,
+                        dni,
                         password
                     );
 
+
+                    // ------------------------------------------------
+                    // Obtener perfil después del login
+                    // ------------------------------------------------
 
                     const perfil =
                         await obtenerPerfilActual();
@@ -85,17 +97,25 @@ document.addEventListener(
                         throw new Error(
                             "Ez da profilik aurkitu."
                         );
-
                     }
+
+
+                    console.log(
+                        "HLBP: login correcto:",
+                        perfil
+                    );
 
 
                     mostrarMensaje(
                         `Ongi etorri, ${
-                            perfil.nombre ||
-                            email
+                            perfil.nombre || dni
                         }`
                     );
 
+
+                    // ------------------------------------------------
+                    // Redirección
+                    // ------------------------------------------------
 
                     setTimeout(
                         () => {
@@ -117,7 +137,7 @@ document.addEventListener(
 
 
                     mostrarError(
-                        "Emaila edo pasahitza ez dira zuzenak."
+                        "DNIa edo pasahitza ez dira zuzenak."
                     );
 
 
@@ -132,6 +152,10 @@ document.addEventListener(
 );
 
 
+// ============================================================
+// MENSAJE
+// ============================================================
+
 function mostrarMensaje(texto) {
 
     const elemento =
@@ -143,15 +167,17 @@ function mostrarMensaje(texto) {
         return;
     }
 
-
     elemento.textContent =
         texto;
-
 
     elemento.className =
         "login-message";
 }
 
+
+// ============================================================
+// ERROR
+// ============================================================
 
 function mostrarError(texto) {
 
@@ -164,10 +190,8 @@ function mostrarError(texto) {
         return;
     }
 
-
     elemento.textContent =
         texto;
-
 
     elemento.className =
         "login-message error";
