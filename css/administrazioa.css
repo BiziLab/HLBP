@@ -189,58 +189,137 @@
     display: block;
 }
 
+/* Panel de creación más compacto y centrado */
+.admin-create-panel .admin-panel {
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Cabecera del formulario */
+.admin-create-panel .admin-panel-header {
+    padding: 24px 28px;
+    background: linear-gradient(
+        135deg,
+        #ffffff 0%,
+        #fcf8fc 100%
+    );
+}
+
+.admin-create-panel .admin-panel-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #252a30;
+}
+
+.admin-create-panel .admin-panel-header p {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #7b8289;
+}
+
+/* Formulario */
+.admin-create-panel .admin-form {
+    padding: 28px;
+    background: #fff;
+}
+
+/* Distribución de campos */
 .admin-form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
+    gap: 22px 24px;
 }
 
 .admin-form-group {
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 8px;
+    min-width: 0;
 }
 
 .admin-form-group.full {
     grid-column: 1 / -1;
 }
 
+/* Etiquetas */
 .admin-form-group label {
     font-size: 13px;
-    font-weight: 600;
-    color: #3d4349;
+    font-weight: 650;
+    color: #353b42;
+    line-height: 1.3;
 }
 
+/* Inputs y selects */
 .admin-form-group input,
 .admin-form-group select {
     width: 100%;
+    min-height: 44px;
     box-sizing: border-box;
-    border: 1px solid #d9d7db;
-    border-radius: 9px;
+
+    border: 1px solid #dcd9de;
+    border-radius: 10px;
+
     background: #fff;
-    padding: 11px 12px;
+
+    padding: 11px 13px;
+
+    font-family: inherit;
     font-size: 14px;
     color: #292d32;
+
     outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
 }
 
+.admin-form-group input::placeholder {
+    color: #a2a7ad;
+}
+
+/* Hover */
+.admin-form-group input:hover,
+.admin-form-group select:hover {
+    border-color: #c9c5cb;
+}
+
+/* Focus */
 .admin-form-group input:focus,
 .admin-form-group select:focus {
     border-color: #851976;
-    box-shadow: 0 0 0 3px rgba(133, 25, 118, 0.08);
+    background: #fff;
+
+    box-shadow:
+        0 0 0 3px rgba(133, 25, 118, 0.08);
 }
 
+/* Texto de ayuda */
 .admin-form-help {
     color: #858b92;
     font-size: 12px;
+    line-height: 1.45;
+    margin-top: -2px;
 }
 
+/* Acciones del formulario */
 .admin-form-actions {
-    margin-top: 22px;
+    margin-top: 28px;
+    padding-top: 22px;
+
+    border-top: 1px solid #eeecef;
+
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 10px;
+}
+
+.admin-form-actions .admin-btn-primary {
+    min-width: 150px;
+    min-height: 43px;
 }
 
 /* ============================================================
@@ -283,31 +362,91 @@
 
 .admin-filters {
     display: grid;
-    grid-template-columns: minmax(250px, 2fr) repeat(2, minmax(180px, 1fr));
-    gap: 12px;
-    padding: 18px 23px;
-    border-bottom: 1px solid #eeecef;
+
+    grid-template-columns:
+        minmax(280px, 2fr)
+        minmax(190px, 1fr)
+        minmax(190px, 1fr);
+
+    gap: 14px;
+
+    padding: 20px 23px;
+
+    background: #fcfbfc;
+
+    border-bottom: 1px solid #ebe8ec;
 }
 
+/* Título visual de los filtros */
+.admin-filters::before {
+    content: "Filtros de búsqueda";
+
+    grid-column: 1 / -1;
+
+    display: block;
+
+    margin-bottom: -3px;
+
+    color: #4b5158;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    letter-spacing: 0.02em;
+}
+
+/* Cada filtro */
 .admin-filter {
     position: relative;
+    min-width: 0;
 }
 
+/* Inputs y selects */
 .admin-filter input,
 .admin-filter select {
     width: 100%;
+    min-height: 42px;
+
     box-sizing: border-box;
-    border: 1px solid #dedce0;
-    border-radius: 9px;
+
+    border: 1px solid #ddd9df;
+    border-radius: 10px;
+
     background: #fff;
-    padding: 10px 12px;
+
+    padding: 10px 13px;
+
+    font-family: inherit;
     font-size: 13px;
+    color: #30353b;
+
     outline: none;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
 }
 
+/* Placeholder */
+.admin-filter input::placeholder {
+    color: #999fa6;
+}
+
+/* Hover */
+.admin-filter input:hover,
+.admin-filter select:hover {
+    border-color: #c9c5cb;
+}
+
+/* Focus */
 .admin-filter input:focus,
 .admin-filter select:focus {
     border-color: #851976;
+    background: #fff;
+
+    box-shadow:
+        0 0 0 3px rgba(133, 25, 118, 0.07);
 }
 
 /* ============================================================
@@ -576,6 +715,7 @@
    ============================================================ */
 
 @media (max-width: 1050px) {
+
     .admin-filters {
         grid-template-columns: 1fr 1fr;
     }
@@ -598,6 +738,7 @@
 }
 
 @media (max-width: 800px) {
+
     .admin-page-header {
         flex-direction: column;
     }
@@ -606,22 +747,43 @@
         grid-template-columns: 1fr;
     }
 
+    /* Formulario */
+    .admin-create-panel .admin-form {
+        padding: 22px;
+    }
+
     .admin-form-grid {
         grid-template-columns: 1fr;
+        gap: 18px;
     }
 
     .admin-form-group.full {
         grid-column: auto;
     }
 
+    .admin-form-actions {
+        justify-content: stretch;
+    }
+
+    .admin-form-actions .admin-btn {
+        flex: 1;
+    }
+
+    /* Filtros */
     .admin-filters {
         grid-template-columns: 1fr;
+        padding: 18px;
     }
 
     .admin-filters .admin-filter:first-child {
         grid-column: auto;
     }
 
+    .admin-filters::before {
+        grid-column: auto;
+    }
+
+    /* Registros */
     .record-filters {
         grid-template-columns: 1fr;
     }
@@ -636,6 +798,7 @@
 }
 
 @media (max-width: 520px) {
+
     .admin-page-header h1 {
         font-size: 25px;
     }
@@ -652,6 +815,24 @@
         padding: 17px;
     }
 
+    /* Formulario */
+    .admin-create-panel .admin-panel-header {
+        padding: 20px;
+    }
+
+    .admin-create-panel .admin-form {
+        padding: 18px;
+    }
+
+    .admin-form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .admin-form-actions .admin-btn {
+        width: 100%;
+    }
+
+    /* Estadísticas */
     .person-stats {
         grid-template-columns: 1fr;
     }
