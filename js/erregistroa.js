@@ -645,49 +645,13 @@ function renderErregistroa() {
 
 function rellenarDatosUsuario() {
 
-    const input =
-        document.getElementById(
-            "registroAholkularia"
-        );
+    const input = document.getElementById("registroAholkularia");
 
     if (!input) {
         return;
     }
 
-
-    const profile =
-        HLBPSession.profile;
-
-    if (!profile) {
-        input.value = "";
-        return;
-    }
-
-
-    const nombre =
-        HLBPSession.getName();
-
-    const codigo =
-        profile.codigo || "";
-
-
-    if (nombre && codigo) {
-
-        input.value =
-            `${nombre} (${codigo})`;
-
-    } else if (nombre) {
-
-        input.value =
-            nombre;
-
-    } else {
-
-        input.value =
-            codigo;
-
-    }
-
+    input.value = HLBPSession.profile ? HLBPSession.getName() : "";
 }
 
 
