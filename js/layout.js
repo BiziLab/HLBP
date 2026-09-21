@@ -31,7 +31,8 @@ window.HLBPLayout = {
         const esAHL =
             window.HLBPSession?.isAHL?.() || false;
 
-        const paginaActual = this.obtenerPaginaActual();
+        const paginaActual =
+            this.obtenerPaginaActual();
 
         app.innerHTML = `
 
@@ -45,7 +46,10 @@ window.HLBPLayout = {
 
                     <div class="sidebar-header">
 
-                        <a href="dashboard.html" class="sidebar-brand">
+                        <a
+                            href="dashboard.html"
+                            class="sidebar-brand"
+                        >
 
                             <div class="sidebar-logo">
                                 HLBP
@@ -61,7 +65,9 @@ window.HLBPLayout = {
                     </div>
 
 
-                    <!-- NAVEGACIÓN -->
+                    <!-- ==================================================
+                         NAVEGACIÓN
+                         ================================================== -->
 
                     <nav class="sidebar-nav">
 
@@ -70,59 +76,113 @@ window.HLBPLayout = {
                         </div>
 
 
-                        <!-- HASIERA -->
+                        <!-- ==================================================
+                             HASIERA
+                             ================================================== -->
 
                         <a
                             href="dashboard.html"
-                            class="nav-item ${paginaActual === "dashboard" ? "active" : ""}"
+                            class="nav-item ${
+                                paginaActual === "dashboard"
+                                    ? "active"
+                                    : ""
+                            }"
                         >
-                            <span class="nav-icon">⌂</span>
-                            <span class="nav-label">Hasiera</span>
+
+                            <span class="nav-icon">
+                                ⌂
+                            </span>
+
+                            <span class="nav-label">
+                                Hasiera
+                            </span>
+
                         </a>
 
 
-                        <!-- ERREGISTROA
-                             SOLO PARA AHL -->
+                        <!-- ==================================================
+                             ERREGISTROA
+                             SOLO AHL
+                             ================================================== -->
 
                         ${
                             esAHL
                                 ? `
                                     <a
                                         href="erregistroa.html"
-                                        class="nav-item ${paginaActual === "erregistroa" ? "active" : ""}"
+                                        class="nav-item ${
+                                            paginaActual === "erregistroa"
+                                                ? "active"
+                                                : ""
+                                        }"
                                     >
-                                        <span class="nav-icon">＋</span>
-                                        <span class="nav-label">Erregistroa</span>
+
+                                        <span class="nav-icon">
+                                            ＋
+                                        </span>
+
+                                        <span class="nav-label">
+                                            Erregistroa
+                                        </span>
+
                                     </a>
                                 `
                                 : ""
                         }
 
 
-                        <!-- HISTORIALA -->
+                        <!-- ==================================================
+                             HISTORIALA
+                             ================================================== -->
 
                         <a
                             href="historiala.html"
-                            class="nav-item ${paginaActual === "historiala" ? "active" : ""}"
+                            class="nav-item ${
+                                paginaActual === "historiala"
+                                    ? "active"
+                                    : ""
+                            }"
                         >
-                            <span class="nav-icon">▤</span>
-                            <span class="nav-label">Historiala</span>
+
+                            <span class="nav-icon">
+                                ▤
+                            </span>
+
+                            <span class="nav-label">
+                                Historiala
+                            </span>
+
                         </a>
 
 
-                        <!-- ZENTROAK -->
+                        <!-- ==================================================
+                             ZENTROAK
+                             ================================================== -->
 
                         <a
                             href="zentroak.html"
-                            class="nav-item ${paginaActual === "zentroak" ? "active" : ""}"
+                            class="nav-item ${
+                                paginaActual === "zentroak"
+                                    ? "active"
+                                    : ""
+                            }"
                         >
-                            <span class="nav-icon">⌂</span>
-                            <span class="nav-label">Zentroak</span>
+
+                            <span class="nav-icon">
+                                🏫
+                            </span>
+
+                            <span class="nav-label">
+                                Zentroak
+                            </span>
+
                         </a>
 
 
-                        <!-- ADMINISTRAZIOA
-                             SOLO ADMIN / MASTER -->
+                        <!-- ==================================================
+                             ADMINISTRAZIOA
+                             SOLO ADMIN / MASTER
+                             ================================================== -->
 
                         ${
                             esAdminOMaster
@@ -131,14 +191,24 @@ window.HLBPLayout = {
                                         ADMINISTRAZIOA
                                     </div>
 
+
                                     <a
                                         href="administrazioa.html"
-                                        class="nav-item ${paginaActual === "administrazioa" ? "active" : ""}"
+                                        class="nav-item ${
+                                            paginaActual === "administrazioa"
+                                                ? "active"
+                                                : ""
+                                        }"
                                     >
-                                        <span class="nav-icon">⚙</span>
+
+                                        <span class="nav-icon">
+                                            ⚙
+                                        </span>
+
                                         <span class="nav-label">
                                             Administrazioa
                                         </span>
+
                                     </a>
                                 `
                                 : ""
@@ -147,7 +217,9 @@ window.HLBPLayout = {
                     </nav>
 
 
-                    <!-- ERABILTZAILEA -->
+                    <!-- ==================================================
+                         ERABILTZAILEA
+                         ================================================== -->
 
                     <div class="sidebar-user">
 
@@ -170,15 +242,24 @@ window.HLBPLayout = {
                     </div>
 
 
-                    <!-- LOGOUT -->
+                    <!-- ==================================================
+                         LOGOUT
+                         ================================================== -->
 
                     <button
                         type="button"
                         class="sidebar-logout"
                         id="logoutButton"
                     >
-                        <span class="nav-icon">↪</span>
-                        <span>Saioa itxi</span>
+
+                        <span class="nav-icon">
+                            ↪
+                        </span>
+
+                        <span>
+                            Saioa itxi
+                        </span>
+
                     </button>
 
                 </aside>
@@ -190,7 +271,10 @@ window.HLBPLayout = {
 
                 <div class="main-area">
 
-                    <!-- TOPBAR -->
+
+                    <!-- ==================================================
+                         TOPBAR
+                         ================================================== -->
 
                     <header class="topbar">
 
@@ -230,9 +314,14 @@ window.HLBPLayout = {
                     </header>
 
 
-                    <!-- EDUKIA -->
+                    <!-- ==================================================
+                         EDUKIA
+                         ================================================== -->
 
-                    <main class="content-area" id="pageContent">
+                    <main
+                        class="content-area"
+                        id="pageContent"
+                    >
 
                         <!-- Dashboard / página se inserta aquí -->
 
@@ -247,7 +336,9 @@ window.HLBPLayout = {
 
         this.inicializarEventos();
 
-        console.log("HLBPLayout: layout cargado correctamente.");
+        console.log(
+            "HLBPLayout: layout cargado correctamente."
+        );
     },
 
 
@@ -260,6 +351,7 @@ window.HLBPLayout = {
         const logoutButton =
             document.getElementById("logoutButton");
 
+
         if (logoutButton) {
 
             logoutButton.addEventListener(
@@ -267,7 +359,10 @@ window.HLBPLayout = {
                 async () => {
 
                     logoutButton.disabled = true;
-                    logoutButton.textContent = "Saioa ixten...";
+
+                    logoutButton.textContent =
+                        "Saioa ixten...";
+
 
                     try {
 
@@ -276,11 +371,14 @@ window.HLBPLayout = {
                                 scope: "local"
                             });
 
+
                         if (error) {
+
                             console.error(
                                 "Errorea saioa ixtean:",
                                 error
                             );
+
                         }
 
                     } catch (error) {
@@ -292,7 +390,9 @@ window.HLBPLayout = {
 
                     } finally {
 
-                        window.location.replace("../index.html");
+                        window.location.replace(
+                            "../index.html"
+                        );
 
                     }
 
@@ -307,10 +407,15 @@ window.HLBPLayout = {
         // ========================================================
 
         const mobileMenuButton =
-            document.getElementById("mobileMenuButton");
+            document.getElementById(
+                "mobileMenuButton"
+            );
 
         const sidebar =
-            document.getElementById("sidebar");
+            document.getElementById(
+                "sidebar"
+            );
+
 
         if (
             mobileMenuButton &&
@@ -335,6 +440,7 @@ window.HLBPLayout = {
                 sidebar.querySelectorAll(
                     ".nav-item"
                 );
+
 
             navLinks.forEach(
                 link => {
@@ -368,35 +474,51 @@ window.HLBPLayout = {
             window.location.pathname
                 .toLowerCase();
 
+
         if (
             pathname.includes("dashboard")
         ) {
+
             return "dashboard";
+
         }
+
 
         if (
             pathname.includes("erregistroa")
         ) {
+
             return "erregistroa";
+
         }
+
 
         if (
             pathname.includes("historiala")
         ) {
+
             return "historiala";
+
         }
+
 
         if (
             pathname.includes("zentroak")
         ) {
+
             return "zentroak";
+
         }
+
 
         if (
             pathname.includes("administrazioa")
         ) {
+
             return "administrazioa";
+
         }
+
 
         return "dashboard";
     },
@@ -412,22 +534,28 @@ window.HLBPLayout = {
             return "U";
         }
 
+
         const partes =
             nombre
                 .trim()
                 .split(/\s+/)
                 .filter(Boolean);
 
+
         if (partes.length === 1) {
+
             return partes[0]
                 .substring(0, 2)
                 .toUpperCase();
+
         }
+
 
         return (
             partes[0].charAt(0) +
             partes[partes.length - 1].charAt(0)
         ).toUpperCase();
+
     },
 
 
@@ -443,6 +571,7 @@ window.HLBPLayout = {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+
     }
 
 };
