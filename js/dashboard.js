@@ -232,25 +232,61 @@ async function cargarEstadisticas() {
         // ----------------------------------------------------
         // CENTROS
         // ----------------------------------------------------
+        //
+        // ADMIN/MASTER: sistemako zentro aktibo guztiak.
+        // AHL: berari esleitutako zentroak bakarrik.
+        // ----------------------------------------------------
 
-        const {
-            count: centros,
-            error: centrosError
-        } =
-            await window.hlbpSupabase
-                .from("centros")
-                .select("id", {
-                    count: "exact",
-                    head: true
-                })
-                .eq(
-                    "activo",
-                    true
-                );
+        let centros = 0;
+
+        if (global) {
+
+            const {
+                count,
+                error: centrosError
+            } =
+                await window.hlbpSupabase
+                    .from("centros")
+                    .select("id", {
+                        count: "exact",
+                        head: true
+                    })
+                    .eq(
+                        "activo",
+                        true
+                    );
 
 
-        if (centrosError) {
-            throw centrosError;
+            if (centrosError) {
+                throw centrosError;
+            }
+
+            centros = count || 0;
+
+        } else {
+
+            const {
+                count,
+                error: centrosError
+            } =
+                await window.hlbpSupabase
+                    .from("aholkulari_centros")
+                    .select("id", {
+                        count: "exact",
+                        head: true
+                    })
+                    .eq(
+                        "aholkulari_id",
+                        HLBPSession.user.id
+                    );
+
+
+            if (centrosError) {
+                throw centrosError;
+            }
+
+            centros = count || 0;
+
         }
 
 
@@ -308,7 +344,9 @@ async function cargarEstadisticas() {
             ${crearStatCard(
                 "Zentroak",
                 centros || 0,
-                "Zentro aktiboak"
+                global
+                    ? "Zentro aktiboak"
+                    : "Zuri esleitutako zentroak"
             )}
 
 
