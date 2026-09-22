@@ -105,19 +105,6 @@
     }
 
 
-    function obtenerIniciales(persona) {
-
-        const nombre = (persona.nombre || "").trim();
-        const apellido = (persona.apellidos || "").trim();
-
-        if (nombre || apellido) {
-            return (nombre.charAt(0) + apellido.charAt(0)).toUpperCase();
-        }
-
-        return (persona.email || "?").charAt(0).toUpperCase();
-    }
-
-
     // ============================================================
     // RENDER
     // ============================================================
@@ -132,12 +119,7 @@
 
         const perfil = window.HLBPSession.profile || {};
 
-        const esAHL = window.HLBPSession.isAHL();
-
-        const nombreCompleto =
-            `${perfil.nombre || ""} ${perfil.apellidos || ""}`.trim() ||
-            perfil.email ||
-            "Erabiltzailea";
+        const esAdminOMaster = window.HLBPSession.isAdminOrMaster();
 
         pageContent.innerHTML = `
 
@@ -154,7 +136,11 @@
                         <h1>Nire profila</h1>
 
                         <p>
-                            Zure datu pertsonalak eta sarbide-pasahitza kudeatu.
+                            ${
+                                esAdminOMaster
+                                    ? "Zure kontuaren mota eta sarbide-pasahitza."
+                                    : "Zure datu pertsonalak eta sarbide-pasahitza."
+                            }
                         </p>
 
                     </div>
@@ -162,122 +148,21 @@
                 </header>
 
 
-                <section class="admin-panel profila-panel">
+                ${
+                    esAdminOMaster
+                        ? renderSeccionAdmin(perfil)
+                        : renderSeccionAHL(perfil)
+                }
 
-                    <div class="profila-header">
 
-                        <div class="profila-avatar">
-                            ${escapeHtml(obtenerIniciales(perfil))}
-                        </div>
+                <section class="admin-panel admin-form-card">
 
-                        <div>
-                            <strong class="profila-header-name">${escapeHtml(nombreCompleto)}</strong>
-                            <span class="profila-header-role">${escapeHtml(window.HLBPSession.getRoleLabel())}</span>
-                        </div>
-
+                    <div class="admin-form-section-head">
+                        <h2>Pasahitza aldatu</h2>
+                        <p>Zure kontuaren sarbide-pasahitza ezarri.</p>
                     </div>
 
-
-                    <div class="admin-panel-header">
-                        <div>
-                            <h2>Datu pertsonalak</h2>
-                            <p>Zure profileko informazioa eguneratu.</p>
-                        </div>
-                    </div>
-
-
-                    <form id="profilaDatosForm" class="admin-form-card" novalidate>
-
-                        <div class="admin-form-grid">
-
-                            <div class="admin-form-group">
-                                <label for="profilaNombre">Izena *</label>
-                                <input
-                                    type="text"
-                                    id="profilaNombre"
-                                    class="admin-input"
-                                    value="${escapeHtml(perfil.nombre || "")}"
-                                    required
-                                    autocomplete="off"
-                                >
-                            </div>
-
-                            <div class="admin-form-group">
-                                <label for="profilaApellidos">Abizenak *</label>
-                                <input
-                                    type="text"
-                                    id="profilaApellidos"
-                                    class="admin-input"
-                                    value="${escapeHtml(perfil.apellidos || "")}"
-                                    required
-                                    autocomplete="off"
-                                >
-                            </div>
-
-                            <div class="admin-form-group">
-                                <label for="profilaEmail">Emaila</label>
-                                <input
-                                    type="email"
-                                    id="profilaEmail"
-                                    class="admin-input"
-                                    value="${escapeHtml(perfil.email || "")}"
-                                    disabled
-                                >
-                                <small class="admin-help">
-                                    Emaila ezin da orri honetatik aldatu.
-                                </small>
-                            </div>
-
-                            <div class="admin-form-group">
-                                <label for="profilaBerritzegune">Berritzegunea</label>
-                                <input
-                                    type="text"
-                                    id="profilaBerritzegune"
-                                    class="admin-input"
-                                    value="${escapeHtml(perfil.berritzegune || "")}"
-                                    autocomplete="off"
-                                >
-                            </div>
-
-                            <div class="admin-form-group">
-                                <label for="profilaEspecialidad">Espezialitatea</label>
-                                <select id="profilaEspecialidad" class="admin-input">
-                                    <option value="">Aukeratu...</option>
-                                    <option value="Inklusioa" ${perfil.espezialitatea === "Inklusioa" ? "selected" : ""}>Inklusioa</option>
-                                    <option value="Bizikidetza" ${perfil.espezialitatea === "Bizikidetza" ? "selected" : ""}>Bizikidetza</option>
-                                    <option value="Posbentzioa" ${perfil.espezialitatea === "Posbentzioa" ? "selected" : ""}>Posbentzioa</option>
-                                </select>
-                            </div>
-
-                        </div>
-
-                        <div id="profilaDatosMessage" class="admin-form-message" aria-live="polite"></div>
-
-                        <footer class="admin-form-actions">
-                            <button type="submit" class="admin-btn admin-btn-primary" id="btnGuardarDatos">
-                                Aldaketak gorde
-                            </button>
-                        </footer>
-
-                    </form>
-
-                </section>
-
-
-                <section class="admin-panel profila-panel">
-
-                    <div class="admin-panel-header">
-                        <div>
-                            <h2>Pasahitza aldatu</h2>
-                            <p>
-                                ${esAHL
-                                    ? "Sarbide-pasahitz berria ezarri."
-                                    : "Zure kontuaren sarbide-pasahitza aldatu."}
-                            </p>
-                        </div>
-                    </div>
-
-                    <form id="profilaPasswordForm" class="admin-form-card" novalidate>
+                    <form id="profilaPasswordForm" novalidate>
 
                         <div class="admin-form-grid">
 
@@ -323,99 +208,144 @@
             </div>
         `;
 
-        $("profilaDatosForm")?.addEventListener("submit", guardarDatos);
-
         $("profilaPasswordForm")?.addEventListener("submit", guardarPassword);
     }
 
 
     // ============================================================
-    // GUARDAR DATOS PERSONALES
+    // SECCIÓN: AHL (datos de solo lectura)
     // ============================================================
 
-    async function guardarDatos(event) {
+    function renderSeccionAHL(perfil) {
 
-        event.preventDefault();
+        return `
 
-        const mensaje = $("profilaDatosMessage");
+            <form id="profilaDatosForm" class="admin-panel admin-form-card" novalidate>
 
-        const boton = $("btnGuardarDatos");
+                <section class="admin-form-section">
 
-        const nombre = valorDe("profilaNombre");
+                    <div class="admin-form-section-head">
+                        <h2>Datu pertsonalak</h2>
+                        <p>
+                            Datu hauek administratzaileak kudeatzen ditu.
+                            Zerbait aldatu behar baduzu, jarri harremanetan
+                            zure administratzailearekin.
+                        </p>
+                    </div>
 
-        const apellidos = valorDe("profilaApellidos");
+                    <div class="admin-form-grid">
 
-        const berritzegune = valorDe("profilaBerritzegune");
+                        <div class="admin-form-group">
+                            <label for="profilaNombre">Izena</label>
+                            <input
+                                type="text"
+                                id="profilaNombre"
+                                class="admin-input"
+                                value="${escapeHtml(perfil.nombre || "")}"
+                                disabled
+                            >
+                        </div>
 
-        const espezialitatea = $("profilaEspecialidad")?.value || "";
+                        <div class="admin-form-group">
+                            <label for="profilaApellidos">Abizenak</label>
+                            <input
+                                type="text"
+                                id="profilaApellidos"
+                                class="admin-input"
+                                value="${escapeHtml(perfil.apellidos || "")}"
+                                disabled
+                            >
+                        </div>
 
-        if (!nombre || !apellidos) {
+                        <div class="admin-form-group">
+                            <label for="profilaEmail">Emaila</label>
+                            <input
+                                type="email"
+                                id="profilaEmail"
+                                class="admin-input"
+                                value="${escapeHtml(perfil.email || "")}"
+                                disabled
+                            >
+                        </div>
 
-            mostrarMensaje(mensaje, "Izena eta abizenak bete behar dira.", "error");
+                        <div class="admin-form-group">
+                            <label for="profilaBerritzegune">Berritzegunea</label>
+                            <input
+                                type="text"
+                                id="profilaBerritzegune"
+                                class="admin-input"
+                                value="${escapeHtml(perfil.berritzegune || "")}"
+                                disabled
+                            >
+                        </div>
 
-            return;
-        }
+                        <div class="admin-form-group">
+                            <label for="profilaEspecialidad">Espezialitatea</label>
+                            <input
+                                type="text"
+                                id="profilaEspecialidad"
+                                class="admin-input"
+                                value="${escapeHtml(perfil.espezialitatea || "")}"
+                                disabled
+                            >
+                        </div>
 
-        const contenidoBoton = boton ? boton.innerHTML : "";
+                    </div>
 
-        if (boton) {
-            boton.disabled = true;
-            boton.textContent = "Gordetzen...";
-        }
+                </section>
 
-        mostrarMensaje(mensaje, "Gordetzen...", "loading");
+            </form>
+        `;
+    }
 
-        try {
 
-            const userId = window.HLBPSession.user.id;
+    // ============================================================
+    // SECCIÓN: ADMIN / MASTER (solo el rol)
+    // ============================================================
 
-            const { error } =
-                await window.hlbpSupabase
-                    .from("profiles")
-                    .update({
-                        nombre,
-                        apellidos,
-                        berritzegune: berritzegune || null,
-                        espezialitatea: espezialitatea || null
-                    })
-                    .eq("id", userId);
+    function renderSeccionAdmin(perfil) {
 
-            if (error) {
-                throw error;
-            }
+        return `
 
-            // Actualizar la sesión en memoria para que la barra lateral
-            // y el resto de la app reflejen el cambio sin recargar.
-            window.HLBPSession.profile = {
-                ...window.HLBPSession.profile,
-                nombre,
-                apellidos,
-                berritzegune: berritzegune || null,
-                espezialitatea: espezialitatea || null
-            };
+            <section class="admin-panel admin-form-card">
 
-            window.HLBPLayout.render();
+                <section class="admin-form-section">
 
-            renderProfila();
+                    <div class="admin-form-section-head">
+                        <h2>Kontuaren mota</h2>
+                        <p>Zure kontuaren informazioa, soilik irakurtzeko.</p>
+                    </div>
 
-            const mensajeNuevo = $("profilaDatosMessage");
+                    <div class="admin-form-grid">
 
-            mostrarMensaje(mensajeNuevo, "✓ Datuak eguneratu dira.", "success");
+                        <div class="admin-form-group">
+                            <label for="profilaRol">Rola</label>
+                            <input
+                                type="text"
+                                id="profilaRol"
+                                class="admin-input"
+                                value="${escapeHtml(window.HLBPSession.getRoleLabel())}"
+                                disabled
+                            >
+                        </div>
 
-        } catch (error) {
+                        <div class="admin-form-group">
+                            <label for="profilaEmailAdmin">Emaila</label>
+                            <input
+                                type="email"
+                                id="profilaEmailAdmin"
+                                class="admin-input"
+                                value="${escapeHtml(perfil.email || "")}"
+                                disabled
+                            >
+                        </div>
 
-            console.error("Errorea datuak gordetzean:", error);
+                    </div>
 
-            mostrarMensaje(mensaje, obtenerMensajeError(error), "error");
+                </section>
 
-        } finally {
-
-            if (boton && $("btnGuardarDatos")) {
-
-                $("btnGuardarDatos").disabled = false;
-                $("btnGuardarDatos").innerHTML = contenidoBoton;
-            }
-        }
+            </section>
+        `;
     }
 
 
