@@ -16,9 +16,21 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
+        /*
+         * Erregistroa AHLentzat bakarrik dago.
+         * ADMIN / MASTER erabiltzaileek ez dute
+         * inolako erregistrorik sortu behar.
+         */
+
+        if (!HLBPSession.isAHL()) {
+
+            window.location.replace("dashboard.html");
+            return;
+        }
+
         HLBPLayout.render();
 
-        inicializarErregistroa();
+        await inicializarErregistroa();
 
     } catch (error) {
 
@@ -37,53 +49,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
 /* ============================================================
-   CATÁLOGO ORIGINAL HLBP
+   EGINKIZUNAK ETA MOTAK
+   ============================================================
+
+   Eginkizun bakoitzak izan dezake:
+     - motak: aukera-zerrenda bat (Mota eremua agertzeko), edo
+       null, Mota eremurik ez badu.
+     - zehaztu: true, "Zehaztu" eremu derrigorrezkoa behar badu
+       (Mota eremuarekin batera ez da inoiz agertzen).
+
    ============================================================ */
 
-const DATOS_EGINKIZUNAK = {
+const EGINKIZUNAK = {
 
-    "Inklusioa": [
-        "Ebaluazio psikopedagogiko berriak",
-        "Protokoloak",
-        "Txostenak",
-        "Eskolatze proposamen berriak",
-        "CNE-en kudeaketa",
-        "Jokabide kasuak",
-        "ZIP gelako eginbeharrak",
-        "LIP gelako eginbeharrak",
-        "Etapa aldaketak"
-    ],
-
-    "Bizikidetza": [
-        "Jokabide kasuak",
-        "Ikasleen konbibentzia"
-    ],
-
-    "Posbentzioa": [
-        "Prebentzio programak"
-    ],
-
-    "Admin": []
-
-};
-
-
-const EGINKIZUN_KONFIG = {
-
-    "Ebaluazio psikopedagogiko berriak": {
-
-        ikasleId: true,
+    "Ebaluazio psikopedagogikoak": {
 
         motak: [
             "Balidatzea",
             "Berria",
             "100.2A",
-            "105 adimen kognitibia",
-            "6. Mailako birrebaluazioa",
-            "Besteak"
-        ],
-
-        motaZehaztu: [
+            "105 adimen kognitiboa",
+            "6. mailako birrebaluazioa",
             "Besteak"
         ]
 
@@ -92,19 +78,12 @@ const EGINKIZUN_KONFIG = {
 
     "Protokoloak": {
 
-        ikasleId: true,
-
         motak: [
             "AGH",
             "AG",
-            "TDL",
+            "HGN",
             "IZE",
             "KSHO"
-        ],
-
-        azpiMotak: [
-            "2. fasetik 3. fasera jarraipena",
-            "3. faseko ebaluazioa"
         ]
 
     },
@@ -112,33 +91,31 @@ const EGINKIZUN_KONFIG = {
 
     "Txostenak": {
 
-        ikasleId: true,
-
         motak: [
             "Ebaluazio psikopedagogikoa",
             "Osatuz programetarako txostena",
-            "Osagarri programetarako txostena"
+            "Osagarri programetarako txostena",
+            "OETH"
         ]
 
     },
 
 
-    "Eskolatze proposamen berriak": {
+    "Eskolaratze proposamenak": {
 
-        ikasleId: true,
-
-        zehaztu: true
+        motak: [
+            "Berriak",
+            "Hezkuntza bereziko ibilbideak"
+        ]
 
     },
 
 
     "CNE-en kudeaketa": {
 
-        ikasleId: true,
-
         motak: [
             "Arlokoa",
-            "Globala"
+            "Orokorra"
         ]
 
     },
@@ -146,15 +123,14 @@ const EGINKIZUN_KONFIG = {
 
     "Jokabide kasuak": {
 
-        ikasleId: true
+        motak: null
 
     },
 
 
     "ZIP gelako eginbeharrak": {
 
-        ikasleId: false,
-
+        motak: null,
         zehaztu: true
 
     },
@@ -162,17 +138,30 @@ const EGINKIZUN_KONFIG = {
 
     "LIP gelako eginbeharrak": {
 
-        ikasleId: false,
-
+        motak: null,
         zehaztu: true
 
     },
 
 
-    "Etapa aldaketak": {
+    "Koordinazio batzarrak": {
 
-        ikasleId: true,
+        motak: [
+            "OT/Fisio",
+            "HLE",
+            "Gorren EHI/ZHI / Gorren taldekatze ikastetxeak",
+            "Osatuz",
+            "UTE",
+            "CSM",
+            "Bestelakoak"
+        ]
 
+    },
+
+
+    "Eskaerapeko ikastetxeetako eskuhartzeak": {
+
+        motak: null,
         zehaztu: true
 
     }
@@ -180,11 +169,14 @@ const EGINKIZUN_KONFIG = {
 };
 
 
-const EREMU_LEHENETSIAK = {
+const EGINKIZUNA_ZERRENDA = Object.keys(EGINKIZUNAK);
 
-    ikasleId: true
 
-};
+/* ============================================================
+   ESTADO
+   ============================================================ */
+
+let hlbpZentroakEsleituak = [];
 
 
 /* ============================================================
@@ -213,9 +205,9 @@ async function inicializarErregistroa() {
 
     rellenarDatosUsuario();
 
-    await cargarCentros();
+    cargarEginkizunak();
 
-    cargarTareas();
+    await cargarCentros();
 
     inicializarEventos();
 
@@ -403,51 +395,6 @@ function renderErregistroa() {
 
 
                             <div
-                                class="erregistroa-field erregistroa-dynamic"
-                                id="grupoAzpiMota"
-                            >
-
-                                <label for="registroAzpiMota">
-                                    Azpi-mota
-                                    <span class="erregistroa-required">*</span>
-                                </label>
-
-                                <select id="registroAzpiMota">
-
-                                    <option value="">
-                                        Aukeratu azpi-mota...
-                                    </option>
-
-                                </select>
-
-                            </div>
-
-
-                            <div
-                                class="erregistroa-field erregistroa-dynamic"
-                                id="grupoIkaslea"
-                            >
-
-                                <label for="registroIkaslea">
-                                    Ikaslearen ID
-                                    <span class="erregistroa-required">*</span>
-                                </label>
-
-                                <input
-                                    type="text"
-                                    id="registroIkaslea"
-                                    placeholder="Adib: IK-0234"
-                                    autocomplete="off"
-                                >
-
-                                <span class="erregistroa-help">
-                                    Ez erabili ikaslearen izen-abizenik. ID edo kodea bakarrik.
-                                </span>
-
-                            </div>
-
-
-                            <div
                                 class="erregistroa-field erregistroa-dynamic erregistroa-dynamic-wide"
                                 id="grupoZehaztu"
                             >
@@ -461,6 +408,29 @@ function renderErregistroa() {
                                     id="registroZehaztu"
                                     placeholder="Zehaztu eginbeharrak..."
                                 ></textarea>
+
+                            </div>
+
+
+                            <div class="erregistroa-field">
+
+                                <label for="registroIkasleKopurua">
+                                    Ikasle kopurua
+                                    <span class="erregistroa-required">*</span>
+                                </label>
+
+                                <input
+                                    type="number"
+                                    id="registroIkasleKopurua"
+                                    min="0"
+                                    step="1"
+                                    inputmode="numeric"
+                                    placeholder="Adib: 3"
+                                >
+
+                                <span class="erregistroa-help">
+                                    Jardueran parte hartu duten ikasleen kopurua.
+                                </span>
 
                             </div>
 
@@ -607,9 +577,7 @@ function renderErregistroa() {
                             class="erregistroa-btn erregistroa-btn-primary"
                         >
 
-                            <span
-                                id="gordeText"
-                            >
+                            <span id="gordeText">
                                 💾 Gorde
                             </span>
 
@@ -645,26 +613,29 @@ function renderErregistroa() {
 
 function rellenarDatosUsuario() {
 
-    const input = document.getElementById("registroAholkularia");
+    const input =
+        document.getElementById("registroAholkularia");
 
     if (!input) {
         return;
     }
 
-    input.value = HLBPSession.profile ? HLBPSession.getName() : "";
+    input.value =
+        HLBPSession.profile
+            ? HLBPSession.getName()
+            : "";
+
 }
 
 
 /* ============================================================
-   CENTROS
+   CENTROS ASIGNADOS
    ============================================================ */
 
 async function cargarCentros() {
 
     const select =
-        document.getElementById(
-            "registroCentro"
-        );
+        document.getElementById("registroCentro");
 
     if (!select) {
         return;
@@ -684,108 +655,34 @@ async function cargarCentros() {
             HLBPSession.user.id;
 
 
-        /*
-         * Primero intentamos obtener los centros asignados
-         * al usuario actual.
-         */
-
-        const {
-            data,
-            error
-        } = await window.hlbpSupabase
-
-            .from("aholkulari_centros")
-
-            .select(`
-                centro_id,
-                centros (
-                    id,
-                    codigo,
-                    nombre,
-                    municipio,
-                    zona,
-                    activo
-                )
-            `)
-
-            .eq(
-                "aholkulari_id",
-                userId
-            );
+        const { data, error } =
+            await window.hlbpSupabase
+                .from("aholkulari_centros")
+                .select(`
+                    centro_id,
+                    centros (
+                        id,
+                        codigo,
+                        nombre,
+                        activo
+                    )
+                `)
+                .eq("aholkulari_id", userId);
 
 
         if (error) {
-
-            console.error(
-                "Error cargando centros:",
-                error
-            );
-
             throw error;
-
         }
 
 
-        let centros =
+        const centros =
             (data || [])
-
                 .map(item => item.centros)
-
                 .filter(
                     centro =>
                         centro &&
                         centro.activo !== false
                 );
-
-
-        /*
-         * Para ADMIN / MASTER, si no hay centros asignados,
-         * mostramos los centros activos disponibles.
-         */
-
-        if (
-            centros.length === 0 &&
-            HLBPSession.isAdminOrMaster()
-        ) {
-
-            const {
-                data: todosCentros,
-                error: todosError
-            } = await window.hlbpSupabase
-
-                .from("centros")
-
-                .select(`
-                    id,
-                    codigo,
-                    nombre,
-                    municipio,
-                    zona,
-                    activo
-                `)
-
-                .eq(
-                    "activo",
-                    true
-                )
-
-                .order(
-                    "nombre",
-                    {
-                        ascending: true
-                    }
-                );
-
-
-            if (todosError) {
-                throw todosError;
-            }
-
-
-            centros =
-                todosCentros || [];
-
-        }
 
 
         centros.sort(
@@ -798,6 +695,9 @@ async function cargarCentros() {
         );
 
 
+        hlbpZentroakEsleituak = centros;
+
+
         if (centros.length === 0) {
 
             select.innerHTML = `
@@ -808,41 +708,44 @@ async function cargarCentros() {
 
             mostrarAlerta(
                 "warning",
-                "Ez dago zentrorik esleituta zure erabiltzaileari."
+                "Ez daukazu zentrorik esleituta. Jarri kontaktuan administratzailearekin."
             );
+
+            bloqueatuFormulario(true);
 
             return;
 
         }
 
 
-        select.innerHTML = `
-            <option value="">
-                Aukeratu ikastetxea...
-            </option>
-        `;
+        select.innerHTML = "";
+
+        centros.forEach(centro => {
+
+            const option =
+                document.createElement("option");
+
+            option.value =
+                centro.id;
+
+            option.textContent =
+                centro.codigo
+                    ? `${centro.nombre} (${centro.codigo})`
+                    : centro.nombre;
+
+            select.appendChild(option);
+
+        });
 
 
-        centros.forEach(
-            centro => {
+        /*
+         * Ikastetxea aurrez hautatuta agertzen da,
+         * baina aholkulariak bere zentroen artean
+         * aldatu dezake.
+         */
 
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-                option.value =
-                    centro.id;
-
-                option.textContent =
-                    `${centro.nombre}${centro.codigo ? ` · ${centro.codigo}` : ""}`;
-
-                select.appendChild(
-                    option
-                );
-
-            }
-        );
+        select.value =
+            centros[0].id;
 
 
     } catch (error) {
@@ -859,57 +762,41 @@ async function cargarCentros() {
             </option>
         `;
 
-
         mostrarAlerta(
             "error",
             "Ezin izan dira zentroak kargatu. Saiatu berriro."
         );
+
+        bloqueatuFormulario(true);
 
     }
 
 }
 
 
+function bloqueatuFormulario(bloqueatu) {
+
+    const button =
+        document.getElementById("gordeButton");
+
+    if (button) {
+        button.disabled = bloqueatu;
+    }
+
+}
+
+
 /* ============================================================
-   TAREAS
+   EGINKIZUNAK
    ============================================================ */
 
-function cargarTareas() {
+function cargarEginkizunak() {
 
     const select =
-        document.getElementById(
-            "registroTarea"
-        );
+        document.getElementById("registroTarea");
 
     if (!select) {
         return;
-    }
-
-
-    const especialidad =
-        HLBPSession.profile?.especialidad ||
-        "";
-
-
-    let tareas =
-        DATOS_EGINKIZUNAK[
-            especialidad
-        ] || [];
-
-
-    /*
-     * ADMIN / MASTER pueden no tener especialidad.
-     * En ese caso mostramos el catálogo completo.
-     */
-
-    if (
-        tareas.length === 0 &&
-        HLBPSession.isAdminOrMaster()
-    ) {
-
-        tareas =
-            obtenerTodasLasTareas();
-
     }
 
 
@@ -920,70 +807,17 @@ function cargarTareas() {
     `;
 
 
-    tareas.forEach(
-        tarea => {
+    EGINKIZUNA_ZERRENDA.forEach(tarea => {
 
-            const option =
-                document.createElement(
-                    "option"
-                );
+        const option =
+            document.createElement("option");
 
-            option.value =
-                tarea;
+        option.value = tarea;
+        option.textContent = tarea;
 
-            option.textContent =
-                tarea;
+        select.appendChild(option);
 
-            select.appendChild(
-                option
-            );
-
-        }
-    );
-
-
-    if (tareas.length === 0) {
-
-        select.innerHTML = `
-            <option value="">
-                Ez dago eginkizunik esleituta
-            </option>
-        `;
-
-    }
-
-}
-
-
-/* ============================================================
-   TODAS LAS TAREAS
-   ============================================================ */
-
-function obtenerTodasLasTareas() {
-
-    const resultado =
-        new Set();
-
-
-    Object.values(
-        DATOS_EGINKIZUNAK
-    ).forEach(
-        tareas => {
-
-            tareas.forEach(
-                tarea =>
-                    resultado.add(
-                        tarea
-                    )
-            );
-
-        }
-    );
-
-
-    return Array.from(
-        resultado
-    );
+    });
 
 }
 
@@ -995,27 +829,13 @@ function obtenerTodasLasTareas() {
 function inicializarEventos() {
 
     const form =
-        document.getElementById(
-            "erregistroaForm"
-        );
-
+        document.getElementById("erregistroaForm");
 
     const tareaSelect =
-        document.getElementById(
-            "registroTarea"
-        );
-
-
-    const motaSelect =
-        document.getElementById(
-            "registroMota"
-        );
-
+        document.getElementById("registroTarea");
 
     const limpiarButton =
-        document.getElementById(
-            "garbituButton"
-        );
+        document.getElementById("garbituButton");
 
 
     if (form) {
@@ -1044,27 +864,14 @@ function inicializarEventos() {
     }
 
 
-    if (motaSelect) {
-
-        motaSelect.addEventListener(
-            "change",
-            updateMotaEremuak
-        );
-
-    }
-
-
     if (limpiarButton) {
 
         limpiarButton.addEventListener(
             "click",
-            limpiarRegistro
+            () => limpiarRegistro()
         );
 
     }
-
-
-    actualizarZehaztuEremua();
 
 }
 
@@ -1076,60 +883,29 @@ function inicializarEventos() {
 function updateEremuak() {
 
     const tarea =
-        document.getElementById(
-            "registroTarea"
-        ).value;
-
+        document.getElementById("registroTarea").value;
 
     const cfg =
-        EGINKIZUN_KONFIG[tarea] ||
-        EREMU_LEHENETSIAK;
-
+        EGINKIZUNAK[tarea] || {};
 
     const grupoMota =
-        document.getElementById(
-            "grupoMota"
-        );
-
-
-    const grupoAzpiMota =
-        document.getElementById(
-            "grupoAzpiMota"
-        );
-
-
-    const grupoIkaslea =
-        document.getElementById(
-            "grupoIkaslea"
-        );
-
+        document.getElementById("grupoMota");
 
     const grupoZehaztu =
-        document.getElementById(
-            "grupoZehaztu"
-        );
-
+        document.getElementById("grupoZehaztu");
 
     const motaSelect =
-        document.getElementById(
-            "registroMota"
-        );
+        document.getElementById("registroMota");
 
-
-    const azpiSelect =
-        document.getElementById(
-            "registroAzpiMota"
-        );
+    const zehaztuInput =
+        document.getElementById("registroZehaztu");
 
 
     /*
      * MOTA
      */
 
-    if (
-        cfg.motak &&
-        cfg.motak.length
-    ) {
+    if (cfg.motak && cfg.motak.length) {
 
         motaSelect.innerHTML = `
             <option value="">
@@ -1137,32 +913,19 @@ function updateEremuak() {
             </option>
         `;
 
+        cfg.motak.forEach(mota => {
 
-        cfg.motak.forEach(
-            mota => {
+            const option =
+                document.createElement("option");
 
-                const option =
-                    document.createElement(
-                        "option"
-                    );
+            option.value = mota;
+            option.textContent = mota;
 
-                option.value =
-                    mota;
+            motaSelect.appendChild(option);
 
-                option.textContent =
-                    mota;
+        });
 
-                motaSelect.appendChild(
-                    option
-                );
-
-            }
-        );
-
-
-        mostrarCampo(
-            grupoMota
-        );
+        mostrarCampo(grupoMota);
 
     } else {
 
@@ -1172,245 +935,25 @@ function updateEremuak() {
             </option>
         `;
 
-
-        ocultarCampo(
-            grupoMota
-        );
+        ocultarCampo(grupoMota);
 
     }
 
 
     /*
-     * AZPI-MOTA
-     */
-
-    azpiSelect.innerHTML = `
-        <option value="">
-            Aukeratu azpi-mota...
-        </option>
-    `;
-
-
-    ocultarCampo(
-        grupoAzpiMota
-    );
-
-
-    /*
-     * IKASLEAREN ID
-     */
-
-    if (cfg.ikasleId) {
-
-        mostrarCampo(
-            grupoIkaslea
-        );
-
-    } else {
-
-        ocultarCampo(
-            grupoIkaslea
-        );
-
-        document.getElementById(
-            "registroIkaslea"
-        ).value = "";
-
-    }
-
-
-    /*
-     * ZEHATZTU
+     * ZEHAZTU
      */
 
     if (cfg.zehaztu) {
 
-        mostrarCampo(
-            grupoZehaztu
-        );
+        mostrarCampo(grupoZehaztu);
 
     } else {
 
-        actualizarZehaztuEremua();
+        ocultarCampo(grupoZehaztu);
 
-    }
-
-
-    if (!cfg.zehaztu) {
-
-        document.getElementById(
-            "registroZehaztu"
-        ).value = "";
-
-    }
-
-}
-
-
-/* ============================================================
-   CAMBIO DE MOTA
-   ============================================================ */
-
-function updateMotaEremuak() {
-
-    const tarea =
-        document.getElementById(
-            "registroTarea"
-        ).value;
-
-
-    const mota =
-        document.getElementById(
-            "registroMota"
-        ).value;
-
-
-    const cfg =
-        EGINKIZUN_KONFIG[tarea] ||
-        {};
-
-
-    const grupoAzpiMota =
-        document.getElementById(
-            "grupoAzpiMota"
-        );
-
-
-    const azpiSelect =
-        document.getElementById(
-            "registroAzpiMota"
-        );
-
-
-    azpiSelect.innerHTML = `
-        <option value="">
-            Aukeratu azpi-mota...
-        </option>
-    `;
-
-
-    /*
-     * El catálogo original tiene Azpi-mota
-     * definido a nivel de tarea.
-     */
-
-    if (
-        cfg.azpiMotak &&
-        cfg.azpiMotak.length &&
-        mota
-    ) {
-
-        cfg.azpiMotak.forEach(
-            azpi => {
-
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-                option.value =
-                    azpi;
-
-                option.textContent =
-                    azpi;
-
-                azpiSelect.appendChild(
-                    option
-                );
-
-            }
-        );
-
-
-        mostrarCampo(
-            grupoAzpiMota
-        );
-
-    } else {
-
-        ocultarCampo(
-            grupoAzpiMota
-        );
-
-    }
-
-
-    actualizarZehaztuEremua();
-
-}
-
-
-/* ============================================================
-   ZEHATZTU
-   ============================================================ */
-
-function zehaztuBeharDa() {
-
-    const tarea =
-        document.getElementById(
-            "registroTarea"
-        ).value;
-
-
-    const mota =
-        document.getElementById(
-            "registroMota"
-        ).value;
-
-
-    const cfg =
-        EGINKIZUN_KONFIG[tarea] ||
-        {};
-
-
-    return Boolean(
-
-        cfg.zehaztu ||
-
-        (
-            cfg.motaZehaztu &&
-            cfg.motaZehaztu.includes(
-                mota
-            )
-        )
-
-    );
-
-}
-
-
-function actualizarZehaztuEremua() {
-
-    const grupo =
-        document.getElementById(
-            "grupoZehaztu"
-        );
-
-
-    if (!grupo) {
-        return;
-    }
-
-
-    if (zehaztuBeharDa()) {
-
-        mostrarCampo(
-            grupo
-        );
-
-    } else {
-
-        ocultarCampo(
-            grupo
-        );
-
-        const textarea =
-            document.getElementById(
-                "registroZehaztu"
-            );
-
-        if (textarea) {
-            textarea.value = "";
+        if (zehaztuInput) {
+            zehaztuInput.value = "";
         }
 
     }
@@ -1425,68 +968,35 @@ function actualizarZehaztuEremua() {
 async function guardarRegistro() {
 
     const centroId =
-        document.getElementById(
-            "registroCentro"
-        ).value;
-
+        document.getElementById("registroCentro").value;
 
     const tarea =
-        document.getElementById(
-            "registroTarea"
-        ).value;
-
+        document.getElementById("registroTarea").value;
 
     const mota =
-        document.getElementById(
-            "registroMota"
-        ).value;
-
-
-    const azpiMota =
-        document.getElementById(
-            "registroAzpiMota"
-        ).value;
-
-
-    const ikaslea =
-        document.getElementById(
-            "registroIkaslea"
-        ).value.trim();
-
+        document.getElementById("registroMota").value;
 
     const zehaztu =
-        document.getElementById(
-            "registroZehaztu"
-        ).value.trim();
+        document.getElementById("registroZehaztu").value.trim();
 
+    const ikasleKopuruaRaw =
+        document.getElementById("registroIkasleKopurua").value.trim();
 
     const fecha =
-        document.getElementById(
-            "registroData"
-        ).value;
-
+        document.getElementById("registroData").value;
 
     const fechaFin =
-        document.getElementById(
-            "registroAmaieraData"
-        ).value;
-
+        document.getElementById("registroAmaieraData").value;
 
     const estado =
-        document.getElementById(
-            "registroEgoera"
-        ).value;
-
+        document.getElementById("registroEgoera").value;
 
     const observaciones =
-        document.getElementById(
-            "registroOharrak"
-        ).value.trim();
+        document.getElementById("registroOharrak").value.trim();
 
 
     const cfg =
-        EGINKIZUN_KONFIG[tarea] ||
-        EREMU_LEHENETSIAK;
+        EGINKIZUNAK[tarea] || {};
 
 
     /*
@@ -1517,6 +1027,61 @@ async function guardarRegistro() {
     }
 
 
+    if (cfg.motak && !mota) {
+
+        mostrarAlerta(
+            "error",
+            "Mota aukeratu behar da."
+        );
+
+        return;
+
+    }
+
+
+    if (cfg.zehaztu && !zehaztu) {
+
+        mostrarAlerta(
+            "error",
+            "\"Zehaztu\" eremua bete behar da."
+        );
+
+        return;
+
+    }
+
+
+    if (ikasleKopuruaRaw === "") {
+
+        mostrarAlerta(
+            "error",
+            "Ikasle kopurua bete behar da."
+        );
+
+        return;
+
+    }
+
+
+    const ikasleKopurua =
+        Number(ikasleKopuruaRaw);
+
+
+    if (
+        !Number.isInteger(ikasleKopurua) ||
+        ikasleKopurua < 0
+    ) {
+
+        mostrarAlerta(
+            "error",
+            "Ikasle kopuruak zenbaki oso positibo bat izan behar du."
+        );
+
+        return;
+
+    }
+
+
     if (!fecha) {
 
         mostrarAlerta(
@@ -1529,10 +1094,7 @@ async function guardarRegistro() {
     }
 
 
-    if (
-        fechaFin &&
-        fechaFin < fecha
-    ) {
+    if (fechaFin && fechaFin < fecha) {
 
         mostrarAlerta(
             "error",
@@ -1544,78 +1106,16 @@ async function guardarRegistro() {
     }
 
 
-    if (
-        cfg.motak &&
-        !mota
-    ) {
-
-        mostrarAlerta(
-            "error",
-            "Mota aukeratu behar da."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        cfg.azpiMotak &&
-        !azpiMota
-    ) {
-
-        mostrarAlerta(
-            "error",
-            "Azpi-mota aukeratu behar da."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        cfg.ikasleId &&
-        !ikaslea
-    ) {
-
-        mostrarAlerta(
-            "error",
-            "Ikaslearen ID bete behar da. Ez erabili izen-abizenik."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        zehaztuBeharDa() &&
-        !zehaztu
-    ) {
-
-        mostrarAlerta(
-            "error",
-            "\"Zehaztu\" eremua bete behar da."
-        );
-
-        return;
-
-    }
-
-
     /*
      * Deshabilitar botón
      */
 
-    cambiarEstadoGuardado(
-        true
-    );
+    cambiarEstadoGuardado(true);
 
 
     try {
 
-        const usuarioId =
+        const aholkulariId =
             HLBPSession.user.id;
 
 
@@ -1624,13 +1124,12 @@ async function guardarRegistro() {
          * Estos nombres corresponden al modelo
          * PostgreSQL que estamos utilizando:
          *
-         * usuario_id
+         * aholkulari_id
          * centro_id
          * tarea
-         * tipo
-         * subtipo
-         * alumno_id
+         * tipo        (= Mota)
          * zehaztu
+         * estudiante_id  (= Ikasle kopurua, guardado como número)
          * fecha
          * fecha_fin
          * estado
@@ -1639,8 +1138,8 @@ async function guardarRegistro() {
 
         const nuevoRegistro = {
 
-            usuario_id:
-                usuarioId,
+            aholkulari_id:
+                aholkulariId,
 
             centro_id:
                 centroId,
@@ -1651,14 +1150,11 @@ async function guardarRegistro() {
             tipo:
                 mota || null,
 
-            subtipo:
-                azpiMota || null,
-
-            alumno_id:
-                ikaslea || null,
-
             zehaztu:
                 zehaztu || null,
+
+            estudiante_id:
+                ikasleKopurua,
 
             fecha:
                 fecha,
@@ -1681,19 +1177,12 @@ async function guardarRegistro() {
         );
 
 
-        const {
-            data,
-            error
-        } = await window.hlbpSupabase
-
-            .from("registros")
-
-            .insert(
-                nuevoRegistro
-            )
-
-            .select()
-            .single();
+        const { data, error } =
+            await window.hlbpSupabase
+                .from("registros")
+                .insert(nuevoRegistro)
+                .select()
+                .single();
 
 
         if (error) {
@@ -1720,15 +1209,7 @@ async function guardarRegistro() {
         );
 
 
-        limpiarRegistro(
-            false
-        );
-
-
-        /*
-         * Mantener la fecha de hoy
-         * después de limpiar.
-         */
+        limpiarRegistro(false);
 
         prepararFechaInicial();
 
@@ -1746,35 +1227,14 @@ async function guardarRegistro() {
             error
         );
 
-
-        let mensaje =
-            "Ezin izan da erregistroa gorde.";
-
-
-        if (
-            error &&
-            error.message
-        ) {
-
-            console.error(
-                "Detalle:",
-                error.message
-            );
-
-        }
-
-
         mostrarAlerta(
             "error",
-            mensaje
+            "Ezin izan da erregistroa gorde."
         );
-
 
     } finally {
 
-        cambiarEstadoGuardado(
-            false
-        );
+        cambiarEstadoGuardado(false);
 
     }
 
@@ -1785,67 +1245,28 @@ async function guardarRegistro() {
    LIMPIAR
    ============================================================ */
 
-function limpiarRegistro(
-    mostrarMensaje = true
-) {
-
-    const centro =
-        document.getElementById(
-            "registroCentro"
-        );
-
+function limpiarRegistro(mostrarMensaje = true) {
 
     const tarea =
-        document.getElementById(
-            "registroTarea"
-        );
-
+        document.getElementById("registroTarea");
 
     const mota =
-        document.getElementById(
-            "registroMota"
-        );
-
-
-    const azpi =
-        document.getElementById(
-            "registroAzpiMota"
-        );
-
-
-    const ikaslea =
-        document.getElementById(
-            "registroIkaslea"
-        );
-
+        document.getElementById("registroMota");
 
     const zehaztu =
-        document.getElementById(
-            "registroZehaztu"
-        );
+        document.getElementById("registroZehaztu");
 
+    const ikasleKopurua =
+        document.getElementById("registroIkasleKopurua");
 
     const fechaFin =
-        document.getElementById(
-            "registroAmaieraData"
-        );
-
+        document.getElementById("registroAmaieraData");
 
     const estado =
-        document.getElementById(
-            "registroEgoera"
-        );
-
+        document.getElementById("registroEgoera");
 
     const observaciones =
-        document.getElementById(
-            "registroOharrak"
-        );
-
-
-    if (centro) {
-        centro.value = "";
-    }
+        document.getElementById("registroOharrak");
 
 
     if (tarea) {
@@ -1864,24 +1285,13 @@ function limpiarRegistro(
     }
 
 
-    if (azpi) {
-
-        azpi.innerHTML = `
-            <option value="">
-                Aukeratu azpi-mota...
-            </option>
-        `;
-
-    }
-
-
-    if (ikaslea) {
-        ikaslea.value = "";
-    }
-
-
     if (zehaztu) {
         zehaztu.value = "";
+    }
+
+
+    if (ikasleKopurua) {
+        ikasleKopurua.value = "";
     }
 
 
@@ -1900,40 +1310,30 @@ function limpiarRegistro(
     }
 
 
-    ocultarCampo(
-        document.getElementById(
-            "grupoMota"
-        )
-    );
+    /*
+     * El centro NO se reinicia: se mantiene
+     * preseleccionado el primer centro asignado.
+     */
 
+    if (hlbpZentroakEsleituak.length > 0) {
 
-    ocultarCampo(
-        document.getElementById(
-            "grupoAzpiMota"
-        )
-    );
+        const centroSelect =
+            document.getElementById("registroCentro");
 
-
-    ocultarCampo(
-        document.getElementById(
-            "grupoZehaztu"
-        )
-    );
-
-
-    const cfg =
-        EREMU_LEHENETSIAK;
-
-
-    if (cfg.ikasleId) {
-
-        mostrarCampo(
-            document.getElementById(
-                "grupoIkaslea"
-            )
-        );
+        if (centroSelect) {
+            centroSelect.value = hlbpZentroakEsleituak[0].id;
+        }
 
     }
+
+
+    ocultarCampo(
+        document.getElementById("grupoMota")
+    );
+
+    ocultarCampo(
+        document.getElementById("grupoZehaztu")
+    );
 
 
     if (mostrarMensaje) {
@@ -1955,10 +1355,7 @@ function limpiarRegistro(
 function prepararFechaInicial() {
 
     const input =
-        document.getElementById(
-            "registroData"
-        );
-
+        document.getElementById("registroData");
 
     if (!input) {
         return;
@@ -1967,31 +1364,15 @@ function prepararFechaInicial() {
 
     if (!input.value) {
 
-        const hoy =
-            new Date();
+        const hoy = new Date();
 
-
-        const year =
-            hoy.getFullYear();
-
+        const year = hoy.getFullYear();
 
         const month =
-            String(
-                hoy.getMonth() + 1
-            ).padStart(
-                2,
-                "0"
-            );
-
+            String(hoy.getMonth() + 1).padStart(2, "0");
 
         const day =
-            String(
-                hoy.getDate()
-            ).padStart(
-                2,
-                "0"
-            );
-
+            String(hoy.getDate()).padStart(2, "0");
 
         input.value =
             `${year}-${month}-${day}`;
@@ -2005,35 +1386,23 @@ function prepararFechaInicial() {
    BOTÓN GUARDAR - ESTADO
    ============================================================ */
 
-function cambiarEstadoGuardado(
-    cargando
-) {
+function cambiarEstadoGuardado(cargando) {
 
     const button =
-        document.getElementById(
-            "gordeButton"
-        );
-
+        document.getElementById("gordeButton");
 
     const text =
-        document.getElementById(
-            "gordeText"
-        );
-
+        document.getElementById("gordeText");
 
     const loading =
-        document.getElementById(
-            "gordeLoading"
-        );
-
+        document.getElementById("gordeLoading");
 
     if (!button) {
         return;
     }
 
 
-    button.disabled =
-        cargando;
+    button.disabled = cargando;
 
 
     if (cargando) {
@@ -2043,9 +1412,7 @@ function cambiarEstadoGuardado(
         }
 
         if (loading) {
-            loading.classList.add(
-                "show"
-            );
+            loading.classList.add("show");
         }
 
     } else {
@@ -2055,9 +1422,7 @@ function cambiarEstadoGuardado(
         }
 
         if (loading) {
-            loading.classList.remove(
-                "show"
-            );
+            loading.classList.remove("show");
         }
 
     }
@@ -2069,34 +1434,24 @@ function cambiarEstadoGuardado(
    CAMPOS VISIBLES
    ============================================================ */
 
-function mostrarCampo(
-    elemento
-) {
+function mostrarCampo(elemento) {
 
     if (!elemento) {
         return;
     }
 
-
-    elemento.classList.add(
-        "visible"
-    );
+    elemento.classList.add("visible");
 
 }
 
 
-function ocultarCampo(
-    elemento
-) {
+function ocultarCampo(elemento) {
 
     if (!elemento) {
         return;
     }
 
-
-    elemento.classList.remove(
-        "visible"
-    );
+    elemento.classList.remove("visible");
 
 }
 
@@ -2105,25 +1460,17 @@ function ocultarCampo(
    ALERTAS
    ============================================================ */
 
-function mostrarAlerta(
-    tipo,
-    mensaje
-) {
+function mostrarAlerta(tipo, mensaje) {
 
     const alert =
-        document.getElementById(
-            "erregistroaAlert"
-        );
-
+        document.getElementById("erregistroaAlert");
 
     if (!alert) {
         return;
     }
 
 
-    let icono =
-        "ℹ";
-
+    let icono = "ℹ";
 
     if (tipo === "success") {
         icono = "✓";
@@ -2141,7 +1488,6 @@ function mostrarAlerta(
     alert.className =
         `erregistroa-alert ${tipo} show`;
 
-
     alert.innerHTML = `
 
         <div class="erregistroa-alert-icon">
@@ -2155,22 +1501,13 @@ function mostrarAlerta(
     `;
 
 
-    clearTimeout(
-        window.hlbpAlertTimeout
-    );
+    clearTimeout(window.hlbpAlertTimeout);
 
+    window.hlbpAlertTimeout = setTimeout(() => {
 
-    window.hlbpAlertTimeout =
-        setTimeout(
-            () => {
+        alert.classList.remove("show");
 
-                alert.classList.remove(
-                    "show"
-                );
-
-            },
-            5000
-        );
+    }, 5000);
 
 }
 
@@ -2179,15 +1516,10 @@ function mostrarAlerta(
    ERROR DE PANTALLA
    ============================================================ */
 
-function mostrarPantallaError(
-    mensaje
-) {
+function mostrarPantallaError(mensaje) {
 
     const app =
-        document.getElementById(
-            "app"
-        );
-
+        document.getElementById("app");
 
     if (!app) {
         return;
@@ -2221,37 +1553,13 @@ function mostrarPantallaError(
    ESCAPE HTML
    ============================================================ */
 
-function escapeHtml(
-    value
-) {
+function escapeHtml(value) {
 
-    return String(
-        value ?? ""
-    )
-
-        .replaceAll(
-            "&",
-            "&amp;"
-        )
-
-        .replaceAll(
-            "<",
-            "&lt;"
-        )
-
-        .replaceAll(
-            ">",
-            "&gt;"
-        )
-
-        .replaceAll(
-            '"',
-            "&quot;"
-        )
-
-        .replaceAll(
-            "'",
-            "&#039;"
-        );
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 
 }
