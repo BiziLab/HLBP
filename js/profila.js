@@ -155,14 +155,14 @@
                 }
 
 
-                <section class="admin-panel admin-form-card">
+                <form id="profilaPasswordForm" class="admin-panel admin-form-card" novalidate>
 
-                    <div class="admin-form-section-head">
-                        <h2>Pasahitza aldatu</h2>
-                        <p>Zure kontuaren sarbide-pasahitza ezarri.</p>
-                    </div>
+                    <section class="admin-form-section">
 
-                    <form id="profilaPasswordForm" novalidate>
+                        <div class="admin-form-section-head">
+                            <h2>Pasahitza aldatu</h2>
+                            <p>Zure kontuaren sarbide-pasahitza ezarri.</p>
+                        </div>
 
                         <div class="admin-form-grid">
 
@@ -193,17 +193,17 @@
 
                         </div>
 
-                        <div id="profilaPasswordMessage" class="admin-form-message" aria-live="polite"></div>
+                    </section>
 
-                        <footer class="admin-form-actions">
-                            <button type="submit" class="admin-btn admin-btn-primary" id="btnGuardarPassword">
-                                Pasahitza eguneratu
-                            </button>
-                        </footer>
+                    <div id="profilaPasswordMessage" class="admin-form-message" aria-live="polite"></div>
 
-                    </form>
+                    <footer class="admin-form-actions">
+                        <button type="submit" class="admin-btn admin-btn-primary" id="btnGuardarPassword">
+                            Pasahitza eguneratu
+                        </button>
+                    </footer>
 
-                </section>
+                </form>
 
             </div>
         `;
