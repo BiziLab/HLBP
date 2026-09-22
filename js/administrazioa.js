@@ -667,7 +667,7 @@
 
                     <div class="admin-field">
 
-                        <label for="adminBerritzegune">Berritzegunea</label>
+                        <label for="adminBerritzegune">Bizilabeko Ubikazioa</label>
 
                         <select id="adminBerritzegune" class="admin-input">
                             <option value="">Guztiak</option>
@@ -892,7 +892,7 @@
                     <thead>
                         <tr>
                             <th>Aholkularia</th>
-                            <th>Berritzegunea</th>
+                            <th>Bizilabeko Ubikazioa</th>
                             <th>Espezialitatea</th>
                             <th>Zentroak</th>
                             <th class="admin-cell-number">Erregistroak</th>
@@ -1176,14 +1176,14 @@
 
                         <div class="admin-form-section-head">
                             <h2>Lan-eremua</h2>
-                            <p>Berritzegunea eta espezialitatea.</p>
+                            <p>Bizilabeko Ubikazioa eta espezialitatea.</p>
                         </div>
 
                         <div class="admin-form-grid">
 
                             <div class="admin-form-group">
 
-                                <label for="nuevoBerritzegune">Berritzegunea *</label>
+                                <label for="nuevoBerritzegune">Bizilabeko Ubikazioa *</label>
 
                                 <input
                                     type="text"
@@ -1881,7 +1881,7 @@
                         </div>
 
                         <div class="person-info-item">
-                            <span>Berritzegunea</span>
+                            <span>Bizilabeko Ubikazioa</span>
                             <strong>${escapeHtml(persona.berritzegune || "—")}</strong>
                         </div>
 
@@ -2233,13 +2233,13 @@
 
                         <div class="admin-form-section-head">
                             <h2>Lan-eremua</h2>
-                            <p>Berritzegunea, espezialitatea eta kontuaren egoera.</p>
+                            <p>Bizilabeko Ubikazioa, espezialitatea eta kontuaren egoera.</p>
                         </div>
 
                         <div class="admin-form-grid">
 
                             <div class="admin-form-group">
-                                <label for="editarBerritzegune">Berritzegunea</label>
+                                <label for="editarBerritzegune">Bizilabeko Ubikazioa</label>
                                 <input
                                     type="text"
                                     id="editarBerritzegune"
@@ -3039,7 +3039,7 @@
                 return {
                     "Aholkularia": nombreCompleto(perfil),
                     "Emaila": perfil.email || "",
-                    "Berritzegunea": perfil.berritzegune || "",
+                    "Bizilabeko Ubikazioa": perfil.berritzegune || "",
                     "Espezialitatea": perfil.espezialitatea || "",
                     "Zentroaren kodigoa": centro.codigo || "",
                     "Zentroa": centro.nombre || "",
@@ -3120,7 +3120,7 @@
                 return {
                     "Aholkularia": nombreCompleto(persona),
                     "Emaila": persona.email || "",
-                    "Berritzegunea": persona.berritzegune || "",
+                    "Bizilabeko Ubikazioa": persona.berritzegune || "",
                     "Espezialitatea": persona.espezialitatea || "",
                     "Zentroaren kodigoa": centro.codigo || "",
                     "Zentroa": centro.nombre || "",
