@@ -558,7 +558,7 @@
             repeat(2, minmax(170px, 1fr));
     }
 
-    .zentroak-search {
+    .zentroak-search-group {
         grid-column: 1 / -1;
     }
 }
@@ -583,7 +583,7 @@
         padding: 18px;
     }
 
-    .zentroak-search {
+    .zentroak-search-group {
         grid-column: auto;
     }
 }
