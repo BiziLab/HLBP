@@ -269,7 +269,7 @@
                         </div>
 
                         <div class="admin-form-group">
-                            <label for="profilaBerritzegune">Berritzegunea</label>
+                            <label for="profilaBerritzegune">Bizilabeko Ubikazioa</label>
                             <input
                                 type="text"
                                 id="profilaBerritzegune"
