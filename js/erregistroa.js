@@ -280,6 +280,27 @@ function renderErregistroa() {
 
 
                             <div
+                                class="erregistroa-field erregistroa-dynamic"
+                                id="grupoAzpiMota"
+                            >
+
+                                <label for="registroAzpiMota">
+                                    Azpi-mota
+                                    <span class="erregistroa-required">*</span>
+                                </label>
+
+                                <select id="registroAzpiMota">
+
+                                    <option value="">
+                                        Aukeratu azpi-mota...
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div
                                 class="erregistroa-field erregistroa-dynamic erregistroa-dynamic-wide"
                                 id="grupoZehaztu"
                             >
@@ -297,9 +318,9 @@ function renderErregistroa() {
                             </div>
 
 
-                            <div class="erregistroa-field">
+                            <div class="erregistroa-field" id="grupoIkasleKopurua">
 
-                                <label for="registroIkasleKopurua">
+                                <label for="registroIkasleKopurua" id="labelIkasleKopurua">
                                     Ikasle kopurua
                                     <span class="erregistroa-required">*</span>
                                 </label>
@@ -313,7 +334,7 @@ function renderErregistroa() {
                                     placeholder="Adib: 3"
                                 >
 
-                                <span class="erregistroa-help">
+                                <span class="erregistroa-help" id="helpIkasleKopurua">
                                     Jardueran parte hartu duten ikasleen kopurua.
                                 </span>
 
@@ -776,11 +797,17 @@ function updateEremuak() {
     const grupoMota =
         document.getElementById("grupoMota");
 
+    const grupoAzpiMota =
+        document.getElementById("grupoAzpiMota");
+
     const grupoZehaztu =
         document.getElementById("grupoZehaztu");
 
     const motaSelect =
         document.getElementById("registroMota");
+
+    const azpiMotaSelect =
+        document.getElementById("registroAzpiMota");
 
     const zehaztuInput =
         document.getElementById("registroZehaztu");
@@ -826,6 +853,47 @@ function updateEremuak() {
 
 
     /*
+     * AZPI-MOTA
+     * (Protokoloak eginkizunean bakarrik agertzen da,
+     * hautatutako motatik independente).
+     */
+
+    if (cfg.azpiMotak && cfg.azpiMotak.length) {
+
+        azpiMotaSelect.innerHTML = `
+            <option value="">
+                Aukeratu azpi-mota...
+            </option>
+        `;
+
+        cfg.azpiMotak.forEach(azpiMota => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = azpiMota;
+            option.textContent = azpiMota;
+
+            azpiMotaSelect.appendChild(option);
+
+        });
+
+        mostrarCampo(grupoAzpiMota);
+
+    } else {
+
+        azpiMotaSelect.innerHTML = `
+            <option value="">
+                Aukeratu azpi-mota...
+            </option>
+        `;
+
+        ocultarCampo(grupoAzpiMota);
+
+    }
+
+
+    /*
      * ZEHAZTU
      */
 
@@ -840,6 +908,76 @@ function updateEremuak() {
         if (zehaztuInput) {
             zehaztuInput.value = "";
         }
+
+    }
+
+
+    /*
+     * IKASLE KOPURUA / IKASLEAREN HNA-NIE
+     */
+
+    aplicarModoIkasleKopurua(tarea);
+
+}
+
+
+/* ============================================================
+   IKASLE KOPURUA / IKASLEAREN HNA-NIE
+
+   Eginkizunaren arabera, eremu berak "Ikasle kopurua" (zenbakia)
+   edo "Ikaslearen HNA/NIE" (testua) eskatzen du.
+   ============================================================ */
+
+function aplicarModoIkasleKopurua(tarea) {
+
+    const label =
+        document.getElementById("labelIkasleKopurua");
+
+    const input =
+        document.getElementById("registroIkasleKopurua");
+
+    const help =
+        document.getElementById("helpIkasleKopurua");
+
+    if (!label || !input || !help) {
+        return;
+    }
+
+    const eskatuKopurua =
+        tarea === "" ||
+        EGINKIZUNAK_IKASLE_KOPURUA.includes(tarea);
+
+    if (eskatuKopurua) {
+
+        label.innerHTML = `
+            Ikasle kopurua
+            <span class="erregistroa-required">*</span>
+        `;
+
+        input.type = "number";
+        input.min = "0";
+        input.step = "1";
+        input.inputMode = "numeric";
+        input.placeholder = "Adib: 3";
+
+        help.textContent =
+            "Jardueran parte hartu duten ikasleen kopurua.";
+
+    } else {
+
+        label.innerHTML = `
+            Ikaslearen HNA/NIE
+            <span class="erregistroa-required">*</span>
+        `;
+
+        input.type = "text";
+        input.removeAttribute("min");
+        input.removeAttribute("step");
+        input.inputMode = "text";
+        input.placeholder = "Adib: 12345678A";
+
+        help.textContent =
+            "Jarduera egin zaion ikaslearen HNA edo NIE zenbakia.";
 
     }
 
@@ -860,6 +998,9 @@ async function guardarRegistro() {
 
     const mota =
         document.getElementById("registroMota").value;
+
+    const azpiMota =
+        document.getElementById("registroAzpiMota").value;
 
     const zehaztu =
         document.getElementById("registroZehaztu").value.trim();
@@ -924,6 +1065,18 @@ async function guardarRegistro() {
     }
 
 
+    if (cfg.azpiMotak && !azpiMota) {
+
+        mostrarAlerta(
+            "error",
+            "Azpi-mota aukeratu behar da."
+        );
+
+        return;
+
+    }
+
+
     if (cfg.zehaztu && !zehaztu) {
 
         mostrarAlerta(
@@ -936,11 +1089,17 @@ async function guardarRegistro() {
     }
 
 
+    const eskatuIkasleKopurua =
+        EGINKIZUNAK_IKASLE_KOPURUA.includes(tarea);
+
+
     if (ikasleKopuruaRaw === "") {
 
         mostrarAlerta(
             "error",
-            "Ikasle kopurua bete behar da."
+            eskatuIkasleKopurua
+                ? "Ikasle kopurua bete behar da."
+                : "Ikaslearen HNA/NIE bete behar da."
         );
 
         return;
@@ -948,21 +1107,34 @@ async function guardarRegistro() {
     }
 
 
-    const ikasleKopurua =
-        Number(ikasleKopuruaRaw);
+    let estudianteValue;
 
 
-    if (
-        !Number.isInteger(ikasleKopurua) ||
-        ikasleKopurua < 0
-    ) {
+    if (eskatuIkasleKopurua) {
 
-        mostrarAlerta(
-            "error",
-            "Ikasle kopuruak zenbaki oso positibo bat izan behar du."
-        );
+        const ikasleKopurua =
+            Number(ikasleKopuruaRaw);
 
-        return;
+
+        if (
+            !Number.isInteger(ikasleKopurua) ||
+            ikasleKopurua < 0
+        ) {
+
+            mostrarAlerta(
+                "error",
+                "Ikasle kopuruak zenbaki oso positibo bat izan behar du."
+            );
+
+            return;
+
+        }
+
+        estudianteValue = ikasleKopurua;
+
+    } else {
+
+        estudianteValue = ikasleKopuruaRaw;
 
     }
 
@@ -1013,8 +1185,11 @@ async function guardarRegistro() {
          * centro_id
          * tarea
          * tipo        (= Mota)
+         * subtipo     (= Azpi-mota)
          * zehaztu
-         * estudiante_id  (= Ikasle kopurua, guardado como número)
+         * estudiante_id  (= Ikasle kopurua zenbakia, edo
+         *                  Ikaslearen HNA/NIE testua, eginkizunaren
+         *                  arabera)
          * fecha
          * fecha_fin
          * estado
@@ -1035,11 +1210,14 @@ async function guardarRegistro() {
             tipo:
                 mota || null,
 
+            subtipo:
+                azpiMota || null,
+
             zehaztu:
                 zehaztu || null,
 
             estudiante_id:
-                ikasleKopurua,
+                estudianteValue,
 
             fecha:
                 fecha,
@@ -1138,6 +1316,9 @@ function limpiarRegistro(mostrarMensaje = true) {
     const mota =
         document.getElementById("registroMota");
 
+    const azpiMota =
+        document.getElementById("registroAzpiMota");
+
     const zehaztu =
         document.getElementById("registroZehaztu");
 
@@ -1164,6 +1345,17 @@ function limpiarRegistro(mostrarMensaje = true) {
         mota.innerHTML = `
             <option value="">
                 Aukeratu mota...
+            </option>
+        `;
+
+    }
+
+
+    if (azpiMota) {
+
+        azpiMota.innerHTML = `
+            <option value="">
+                Aukeratu azpi-mota...
             </option>
         `;
 
@@ -1217,8 +1409,14 @@ function limpiarRegistro(mostrarMensaje = true) {
     );
 
     ocultarCampo(
+        document.getElementById("grupoAzpiMota")
+    );
+
+    ocultarCampo(
         document.getElementById("grupoZehaztu")
     );
+
+    aplicarModoIkasleKopurua("");
 
 
     if (mostrarMensaje) {
