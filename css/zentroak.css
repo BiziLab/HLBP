@@ -83,6 +83,59 @@
     transform: translateY(-1px);
 }
 
+.zentroak-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.zentroak-btn-primary {
+    border-color: var(--hlbp-primary);
+    background: var(--hlbp-primary);
+    color: #fff;
+}
+
+.zentroak-btn-primary:hover {
+    background: var(--hlbp-primary-dark);
+    border-color: var(--hlbp-primary-dark);
+}
+
+.zentroa-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.zentroak-row-btn {
+    border: 1px solid #ddd9df;
+    border-radius: 8px;
+    background: #fff;
+    color: #4c535a;
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.zentroak-row-btn:hover {
+    background: #faf8fa;
+    border-color: #cfc9d0;
+}
+
+.zentroak-row-btn-danger {
+    border-color: rgba(192, 57, 43, 0.35);
+    color: var(--hlbp-danger);
+}
+
+.zentroak-row-btn-danger:hover {
+    background: rgba(192, 57, 43, 0.08);
+    border-color: var(--hlbp-danger);
+}
+
 
 /* ============================================================
    ESTADÍSTICAS
