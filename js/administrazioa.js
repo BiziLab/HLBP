@@ -2170,18 +2170,58 @@
                                 >
                             </div>
 
+                        </div>
+
+                    </section>
+
+
+                    <section class="admin-form-section">
+
+                        <div class="admin-form-section-head">
+                            <h2>Sarbidea</h2>
+                            <p>Saioa hasteko emaila eta pasahitza.</p>
+                        </div>
+
+                        <div class="admin-form-grid">
+
                             <div class="admin-form-group">
-                                <label for="editarEmail">Emaila</label>
+                                <label for="editarEmail">Emaila *</label>
                                 <input
                                     type="email"
                                     id="editarEmail"
                                     class="admin-input"
                                     value="${escapeHtml(persona.email || "")}"
-                                    disabled
+                                    required
+                                    autocomplete="off"
                                 >
                                 <small class="admin-help">
-                                    Sarbide-emaila ezin da orri honetatik aldatu.
+                                    Emaila aldatzen baduzu, aholkulariak email berri
+                                    horrekin hasi beharko du saioa hurrengoan.
                                 </small>
+                            </div>
+
+                            <div class="admin-form-group">
+                                <label for="editarPasswordBerria">Pasahitz berria</label>
+                                <input
+                                    type="password"
+                                    id="editarPasswordBerria"
+                                    class="admin-input"
+                                    autocomplete="new-password"
+                                    minlength="6"
+                                    placeholder="Hutsik utzi aldatu nahi ez baduzu"
+                                >
+                            </div>
+
+                            <div class="admin-form-group">
+                                <label for="editarPasswordErrepikatu">Errepikatu pasahitz berria</label>
+                                <input
+                                    type="password"
+                                    id="editarPasswordErrepikatu"
+                                    class="admin-input"
+                                    autocomplete="new-password"
+                                    minlength="6"
+                                    placeholder="Hutsik utzi aldatu nahi ez baduzu"
+                                >
                             </div>
 
                         </div>
@@ -2451,17 +2491,47 @@
 
         const apellidos = valorDe("editarApellidos");
 
+        const email = valorDe("editarEmail").toLowerCase();
+
+        const passwordBerria = valorDe("editarPasswordBerria");
+
+        const passwordErrepikatu = valorDe("editarPasswordErrepikatu");
+
         const berritzegune = valorDe("editarBerritzegune");
 
         const espezialitatea = $("editarEspecialidad")?.value || "";
 
         const activo = $("editarActivo")?.value === "true";
 
-        if (!nombre || !apellidos) {
+        if (!nombre || !apellidos || !email) {
 
-            mostrarFormularioMensaje(mensaje, "Izena eta abizenak bete behar dira.", "error");
+            mostrarFormularioMensaje(mensaje, "Izena, abizenak eta emaila bete behar dira.", "error");
 
             return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+
+            mostrarFormularioMensaje(mensaje, "Email helbideak ez du formatu zuzena.", "error");
+
+            return;
+        }
+
+        if (passwordBerria || passwordErrepikatu) {
+
+            if (passwordBerria.length < 6) {
+
+                mostrarFormularioMensaje(mensaje, "Pasahitz berriak gutxienez 6 karaktere izan behar ditu.", "error");
+
+                return;
+            }
+
+            if (passwordBerria !== passwordErrepikatu) {
+
+                mostrarFormularioMensaje(mensaje, "Pasahitz berriak ez datoz bat.", "error");
+
+                return;
+            }
         }
 
         const contenidoBoton = boton ? boton.innerHTML : "";
@@ -2474,6 +2544,54 @@
         mostrarFormularioMensaje(mensaje, "Gordetzen...", "loading");
 
         try {
+
+            // ------------------------------------------------
+            // SARBIDEA: emaila eta/edo pasahitza (Edge Function)
+            // ------------------------------------------------
+            //
+            // Auth-eko emaila/pasahitza aldatzeko ezin da taula
+            // zuzenean idatzi: "create-aholkularia" eta
+            // "delete-aholkularia" bezalako Edge Function batek
+            // (service role gakoarekin) egin behar du.
+            // ------------------------------------------------
+
+            const emailAldatu = email !== (persona.email || "").toLowerCase();
+
+            if (emailAldatu || passwordBerria) {
+
+                const kredentzialak = { userId: persona.id };
+
+                if (emailAldatu) {
+                    kredentzialak.email = email;
+                }
+
+                if (passwordBerria) {
+                    kredentzialak.password = passwordBerria;
+                }
+
+                const { data: kredentzialakData, error: kredentzialakError } =
+                    await window.hlbpSupabase.functions.invoke(
+                        "update-aholkularia",
+                        { body: kredentzialak }
+                    );
+
+                if (kredentzialakError) {
+
+                    throw new Error(
+                        await leerErrorFuncion(
+                            kredentzialakError,
+                            "Ezin izan dira sarbide-datuak eguneratu."
+                        )
+                    );
+                }
+
+                if (!kredentzialakData || kredentzialakData.success !== true) {
+
+                    throw new Error(
+                        kredentzialakData?.error || "Ezin izan dira sarbide-datuak eguneratu."
+                    );
+                }
+            }
 
             // ------------------------------------------------
             // DATOS DEL PERFIL
