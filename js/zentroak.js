@@ -396,18 +396,26 @@ function renderZentroak() {
 
                 <div class="zentroak-filters">
 
-                    <div class="zentroak-search">
+                    <div class="zentroak-filter-group zentroak-search-group">
 
-                        <span class="zentroak-search-icon">
-                            ⌕
-                        </span>
+                        <label for="zentroakSearch">
+                            Bilatu
+                        </label>
 
-                        <input
-                            type="search"
-                            id="zentroakSearch"
-                            placeholder="Bilatu izena, kodigoa, udalerria..."
-                            autocomplete="off"
-                        >
+                        <div class="zentroak-search">
+
+                            <span class="zentroak-search-icon">
+                                ⌕
+                            </span>
+
+                            <input
+                                type="search"
+                                id="zentroakSearch"
+                                placeholder="Bilatu izena, kodigoa, udalerria..."
+                                autocomplete="off"
+                            >
+
+                        </div>
 
                     </div>
 
