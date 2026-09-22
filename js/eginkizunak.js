@@ -37,6 +37,11 @@ const EGINKIZUNAK = {
             "HGN",
             "IZE",
             "KSHO"
+        ],
+
+        azpiMotak: [
+            "2. Fasetik 3.Fasera jarraipena",
+            "3.Faseko ebaluazioa"
         ]
 
     },
@@ -123,3 +128,18 @@ const EGINKIZUNAK = {
 
 
 const EGINKIZUNA_ZERRENDA = Object.keys(EGINKIZUNAK);
+
+
+/* ============================================================
+   IKASLE KOPURUA vs IKASLEAREN HNA/NIE
+
+   Eginkizun hauetan bakarrik eskatzen da "Ikasle kopurua"
+   (parte hartu duten ikasleen zenbaketa). Gainerako
+   eginkizunetan "Ikaslearen HNA/NIE" eskatzen da, jarduera
+   egin zaion ikasle zehatza identifikatzeko.
+   ============================================================ */
+
+const EGINKIZUNAK_IKASLE_KOPURUA = [
+    "Protokoloak",
+    "CNE-en kudeaketa"
+];
