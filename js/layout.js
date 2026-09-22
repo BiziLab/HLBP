@@ -133,26 +133,33 @@ window.HLBPLayout = {
 
                         <!-- ==================================================
                              HISTORIALA
+                             SOLO AHL
                              ================================================== -->
 
-                        <a
-                            href="historiala.html"
-                            class="nav-item ${
-                                paginaActual === "historiala"
-                                    ? "active"
-                                    : ""
-                            }"
-                        >
+                        ${
+                            esAHL
+                                ? `
+                                    <a
+                                        href="historiala.html"
+                                        class="nav-item ${
+                                            paginaActual === "historiala"
+                                                ? "active"
+                                                : ""
+                                        }"
+                                    >
 
-                            <span class="nav-icon">
-                                ▤
-                            </span>
+                                        <span class="nav-icon">
+                                            ▤
+                                        </span>
 
-                            <span class="nav-label">
-                                Historiala
-                            </span>
+                                        <span class="nav-label">
+                                            Historiala
+                                        </span>
 
-                        </a>
+                                    </a>
+                                `
+                                : ""
+                        }
 
 
                         <!-- ==================================================
