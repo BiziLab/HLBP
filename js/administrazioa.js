@@ -39,7 +39,9 @@
         usuarios: svg('<circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"></path>'),
         registros: svg('<rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"></path>'),
         centros: svg('<path d="M4 21V9l8-5 8 5v12M2 21h20M9 21v-6h6v6M12 10v.01"></path>'),
-        aviso: svg('<path d="M12 4 2.5 20h19L12 4ZM12 10v4M12 17v.01"></path>')
+        aviso: svg('<path d="M12 4 2.5 20h19L12 4ZM12 10v4M12 17v.01"></path>'),
+        editatu: svg('<path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path>'),
+        x: svg('<path d="M6 6l12 12M18 6 6 18"></path>')
     };
 
 
@@ -1777,6 +1779,7 @@
         estado.persona = persona;
         estado.registros = registros;
         estado.centros = centros;
+        estado.centrosAsignados = centrosAsignados;
 
         const nombre = nombreCompleto(persona) || persona.email || "Aholkularia";
 
@@ -1841,6 +1844,15 @@
                         >
                             ${ICONOS.descargar}
                             Excelera deskargatu
+                        </button>
+
+                        <button
+                            type="button"
+                            class="admin-btn admin-btn-primary"
+                            id="btnEditarPersona"
+                        >
+                            ${ICONOS.editatu}
+                            Editatu
                         </button>
 
                     </div>
@@ -2012,9 +2024,533 @@
 
         $("btnExcelPersona")?.addEventListener("click", descargarExcelPersona);
 
+        $("btnEditarPersona")?.addEventListener("click", () => {
+            mostrarFormularioEditarPersona(persona, centrosAsignados);
+        });
+
         inicializarFiltrosRegistros();
 
         aplicarFiltrosRegistros();
+    }
+
+
+    // ============================================================
+    // EDITAR PERSONA (DATUAK + ZENTROAK)
+    // ============================================================
+
+    async function mostrarFormularioEditarPersona(persona, centrosAsignadosActuales) {
+
+        const pageContent = $("pageContent");
+
+        if (!pageContent) {
+            return;
+        }
+
+        pageContent.innerHTML = cargando("Zentroen zerrenda kargatzen...");
+
+        let todosLosCentros = [];
+
+        try {
+
+            todosLosCentros = await obtenerTodas(
+                "centros",
+                "id, codigo, nombre, activo",
+                { orden: [["codigo", true], ["id", true]] }
+            );
+
+        } catch (error) {
+
+            console.error("Error cargando zentroak:", error);
+        }
+
+        renderFormularioEditarPersona(
+            persona,
+            todosLosCentros,
+            centrosAsignadosActuales || []
+        );
+    }
+
+
+    function renderFormularioEditarPersona(persona, todosLosCentros, centrosAsignadosIniciales) {
+
+        const pageContent = $("pageContent");
+
+        if (!pageContent) {
+            return;
+        }
+
+        const nombre = nombreCompleto(persona) || persona.email || "Aholkularia";
+
+        // Set de ids (como string) actualmente seleccionados.
+        const seleccionados = new Set(
+            centrosAsignadosIniciales.map(centro => String(centro.id))
+        );
+
+        const codigoMap = new Map(
+            todosLosCentros
+                .filter(centro => centro.codigo)
+                .map(centro => [String(centro.codigo).trim().toLowerCase(), centro])
+        );
+
+        const centrosMap = new Map(
+            todosLosCentros.map(centro => [String(centro.id), centro])
+        );
+
+        pageContent.innerHTML = `
+
+            <div class="admin-page admin-page-narrow">
+
+                <header class="admin-page-header">
+
+                    <div>
+
+                        <div class="admin-breadcrumb">
+                            HLBP / Administrazioa / ${escapeHtml(nombre)} / Editatu
+                        </div>
+
+                        <h1>${escapeHtml(nombre)} editatu</h1>
+
+                        <p>
+                            Aholkulariaren datu guztiak eta esleitutako zentroak kudeatu.
+                        </p>
+
+                    </div>
+
+                    <div class="admin-header-actions">
+
+                        <button
+                            type="button"
+                            class="admin-btn admin-btn-secondary"
+                            id="btnCancelarEdicion"
+                        >
+                            ${ICONOS.volver}
+                            Utzi
+                        </button>
+
+                    </div>
+
+                </header>
+
+
+                <div id="editarPersonaResultado" aria-live="polite"></div>
+
+
+                <form id="editarPersonaForm" class="admin-panel admin-form-card" novalidate>
+
+                    <section class="admin-form-section">
+
+                        <div class="admin-form-section-head">
+                            <h2>Datu pertsonalak</h2>
+                            <p>Aholkulariaren izena eta abizenak.</p>
+                        </div>
+
+                        <div class="admin-form-grid">
+
+                            <div class="admin-form-group">
+                                <label for="editarNombre">Izena *</label>
+                                <input
+                                    type="text"
+                                    id="editarNombre"
+                                    class="admin-input"
+                                    value="${escapeHtml(persona.nombre || "")}"
+                                    required
+                                    autocomplete="off"
+                                >
+                            </div>
+
+                            <div class="admin-form-group">
+                                <label for="editarApellidos">Abizenak *</label>
+                                <input
+                                    type="text"
+                                    id="editarApellidos"
+                                    class="admin-input"
+                                    value="${escapeHtml(persona.apellidos || "")}"
+                                    required
+                                    autocomplete="off"
+                                >
+                            </div>
+
+                            <div class="admin-form-group">
+                                <label for="editarEmail">Emaila</label>
+                                <input
+                                    type="email"
+                                    id="editarEmail"
+                                    class="admin-input"
+                                    value="${escapeHtml(persona.email || "")}"
+                                    disabled
+                                >
+                                <small class="admin-help">
+                                    Sarbide-emaila ezin da orri honetatik aldatu.
+                                </small>
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <section class="admin-form-section">
+
+                        <div class="admin-form-section-head">
+                            <h2>Lan-eremua</h2>
+                            <p>Berritzegunea, espezialitatea eta kontuaren egoera.</p>
+                        </div>
+
+                        <div class="admin-form-grid">
+
+                            <div class="admin-form-group">
+                                <label for="editarBerritzegune">Berritzegunea</label>
+                                <input
+                                    type="text"
+                                    id="editarBerritzegune"
+                                    class="admin-input"
+                                    value="${escapeHtml(persona.berritzegune || "")}"
+                                    autocomplete="off"
+                                >
+                            </div>
+
+                            <div class="admin-form-group">
+                                <label for="editarEspecialidad">Espezialitatea</label>
+                                <select id="editarEspecialidad" class="admin-input">
+                                    <option value="">Aukeratu...</option>
+                                    <option value="Inklusioa" ${persona.espezialitatea === "Inklusioa" ? "selected" : ""}>Inklusioa</option>
+                                    <option value="Bizikidetza" ${persona.espezialitatea === "Bizikidetza" ? "selected" : ""}>Bizikidetza</option>
+                                    <option value="Posbentzioa" ${persona.espezialitatea === "Posbentzioa" ? "selected" : ""}>Posbentzioa</option>
+                                </select>
+                            </div>
+
+                            <div class="admin-form-group">
+                                <label for="editarActivo">Kontuaren egoera</label>
+                                <select id="editarActivo" class="admin-input">
+                                    <option value="true" ${persona.activo !== false ? "selected" : ""}>Aktibo</option>
+                                    <option value="false" ${persona.activo === false ? "selected" : ""}>Ez-aktibo</option>
+                                </select>
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <section class="admin-form-section">
+
+                        <div class="admin-form-section-head">
+                            <h2>Zentroak</h2>
+                            <p>Esleitutako zentroak gehitu edo kendu.</p>
+                        </div>
+
+                        <div class="admin-form-grid">
+
+                            <div class="admin-form-group admin-form-full">
+
+                                <label>Esleitutako zentroak</label>
+
+                                <div id="editarCentrosChips" class="admin-chip-list admin-chip-editable"></div>
+
+                            </div>
+
+                            <div class="admin-form-group admin-form-full">
+
+                                <label for="editarCentrosNuevos">Zentroak gehitu (kodeen bidez)</label>
+
+                                <input
+                                    type="text"
+                                    id="editarCentrosNuevos"
+                                    class="admin-input"
+                                    list="editarCentrosPropuestas"
+                                    placeholder="014002, 014003, 014004"
+                                    autocomplete="off"
+                                >
+
+                                <datalist id="editarCentrosPropuestas">
+                                    ${todosLosCentros
+                                        .filter(centro => centro.codigo)
+                                        .map(centro => `<option value="${escapeHtml(centro.codigo)}">${escapeHtml(centro.nombre || "")}</option>`)
+                                        .join("")}
+                                </datalist>
+
+                                <small class="admin-help">
+                                    Zentroen kodeak koma, hutsune edo puntu eta komaz bereizita.
+                                    Kodeak datu-basean dauden bezala idatzi behar dira.
+                                </small>
+
+                                <div class="admin-form-inline-action">
+                                    <button
+                                        type="button"
+                                        class="admin-btn admin-btn-small admin-btn-secondary"
+                                        id="btnAnadirCentros"
+                                    >
+                                        ${ICONOS.mas}
+                                        Zerrendara gehitu
+                                    </button>
+                                </div>
+
+                                <div id="editarCentrosError" class="admin-form-message"></div>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <div id="editarPersonaMessage" class="admin-form-message" aria-live="polite"></div>
+
+                    <footer class="admin-form-actions">
+
+                        <button
+                            type="button"
+                            class="admin-btn admin-btn-secondary"
+                            id="btnCancelarEdicion2"
+                        >
+                            Utzi
+                        </button>
+
+                        <button
+                            type="submit"
+                            class="admin-btn admin-btn-primary"
+                            id="btnGuardarEdicion"
+                        >
+                            Aldaketak gorde
+                        </button>
+
+                    </footer>
+
+                </form>
+
+            </div>
+        `;
+
+
+        function pintarChipsCentros() {
+
+            const contenedor = $("editarCentrosChips");
+
+            if (!contenedor) {
+                return;
+            }
+
+            if (seleccionados.size === 0) {
+
+                contenedor.innerHTML = `<span class="admin-muted">Ez dago zentrorik esleituta.</span>`;
+
+                return;
+            }
+
+            contenedor.innerHTML = [...seleccionados]
+                .map(id => centrosMap.get(id))
+                .filter(Boolean)
+                .sort((a, b) =>
+                    String(a.codigo || "").localeCompare(String(b.codigo || ""), "eu")
+                )
+                .map(centro => `
+                    <span class="admin-chip admin-chip-removable" title="${escapeHtml(centro.nombre || "")}">
+                        ${escapeHtml(centro.codigo || centro.nombre || "—")}
+                        <button
+                            type="button"
+                            class="admin-chip-remove"
+                            data-remove-centro="${escapeHtml(centro.id)}"
+                            aria-label="Kendu ${escapeHtml(centro.codigo || centro.nombre || "")}"
+                        >
+                            ${ICONOS.x}
+                        </button>
+                    </span>
+                `)
+                .join("");
+
+            contenedor.querySelectorAll("[data-remove-centro]").forEach(boton => {
+
+                boton.addEventListener("click", () => {
+
+                    seleccionados.delete(boton.dataset.removeCentro);
+
+                    pintarChipsCentros();
+                });
+            });
+        }
+
+
+        pintarChipsCentros();
+
+
+        $("btnAnadirCentros")?.addEventListener("click", () => {
+
+            const errorContenedor = $("editarCentrosError");
+
+            const input = $("editarCentrosNuevos");
+
+            const codigos = parsearCentros(input?.value);
+
+            if (errorContenedor) {
+                errorContenedor.className = "admin-form-message";
+                errorContenedor.textContent = "";
+            }
+
+            if (!codigos.length) {
+                return;
+            }
+
+            const noEncontrados = [];
+
+            codigos.forEach(codigo => {
+
+                const centro = codigoMap.get(codigo.trim().toLowerCase());
+
+                if (centro) {
+                    seleccionados.add(String(centro.id));
+                } else {
+                    noEncontrados.push(codigo);
+                }
+            });
+
+            pintarChipsCentros();
+
+            if (input) {
+                input.value = "";
+            }
+
+            if (noEncontrados.length && errorContenedor) {
+
+                errorContenedor.className = "admin-form-message error";
+
+                errorContenedor.textContent =
+                    `Ez dira aurkitu kode hauek: ${noEncontrados.join(", ")}`;
+            }
+        });
+
+
+        $("btnCancelarEdicion")?.addEventListener("click", () => {
+            renderPersona(estado.persona, estado.registros, estado.centros, estado.centrosAsignados);
+        });
+
+        $("btnCancelarEdicion2")?.addEventListener("click", () => {
+            renderPersona(estado.persona, estado.registros, estado.centros, estado.centrosAsignados);
+        });
+
+
+        $("editarPersonaForm")?.addEventListener("submit", async event => {
+
+            event.preventDefault();
+
+            await guardarEdicionPersona(
+                persona,
+                seleccionados,
+                centrosAsignadosIniciales
+            );
+        });
+    }
+
+
+    async function guardarEdicionPersona(persona, seleccionados, centrosAsignadosIniciales) {
+
+        const boton = $("btnGuardarEdicion");
+
+        const mensaje = $("editarPersonaMessage");
+
+        const nombre = valorDe("editarNombre");
+
+        const apellidos = valorDe("editarApellidos");
+
+        const berritzegune = valorDe("editarBerritzegune");
+
+        const espezialitatea = $("editarEspecialidad")?.value || "";
+
+        const activo = $("editarActivo")?.value === "true";
+
+        if (!nombre || !apellidos) {
+
+            mostrarFormularioMensaje(mensaje, "Izena eta abizenak bete behar dira.", "error");
+
+            return;
+        }
+
+        const contenidoBoton = boton ? boton.innerHTML : "";
+
+        if (boton) {
+            boton.disabled = true;
+            boton.textContent = "Gordetzen...";
+        }
+
+        mostrarFormularioMensaje(mensaje, "Gordetzen...", "loading");
+
+        try {
+
+            // ------------------------------------------------
+            // DATOS DEL PERFIL
+            // ------------------------------------------------
+
+            const { error: perfilError } =
+                await window.hlbpSupabase
+                    .from("profiles")
+                    .update({
+                        nombre,
+                        apellidos,
+                        berritzegune: berritzegune || null,
+                        espezialitatea: espezialitatea || null,
+                        activo
+                    })
+                    .eq("id", persona.id);
+
+            if (perfilError) {
+                throw perfilError;
+            }
+
+            // ------------------------------------------------
+            // ZENTROAK: diferencia entre lo asignado antes y ahora
+            // ------------------------------------------------
+
+            const idsIniciales = new Set(
+                centrosAsignadosIniciales.map(centro => String(centro.id))
+            );
+
+            const aAnadir = [...seleccionados].filter(id => !idsIniciales.has(id));
+
+            const aQuitar = [...idsIniciales].filter(id => !seleccionados.has(id));
+
+            if (aAnadir.length) {
+
+                const { error: insertError } =
+                    await window.hlbpSupabase
+                        .from("aholkulari_centros")
+                        .insert(
+                            aAnadir.map(centroId => ({
+                                aholkulari_id: persona.id,
+                                centro_id: centroId
+                            }))
+                        );
+
+                if (insertError) {
+                    throw insertError;
+                }
+            }
+
+            if (aQuitar.length) {
+
+                const { error: deleteError } =
+                    await window.hlbpSupabase
+                        .from("aholkulari_centros")
+                        .delete()
+                        .eq("aholkulari_id", persona.id)
+                        .in("centro_id", aQuitar);
+
+                if (deleteError) {
+                    throw deleteError;
+                }
+            }
+
+            await cargarPersona(persona.id);
+
+        } catch (error) {
+
+            console.error("Errorea Aholkularia editatzean:", error);
+
+            mostrarFormularioMensaje(mensaje, obtenerMensajeError(error), "error");
+
+            if (boton) {
+                boton.disabled = false;
+                boton.innerHTML = contenidoBoton;
+            }
+        }
     }
 
 
@@ -2228,7 +2764,7 @@
                             <th>Eginkizuna</th>
                             <th>Mota</th>
                             <th>Azpi-mota</th>
-                            <th>Ikaslearen ID</th>
+                            <th>Ikasle kopurua</th>
                             <th>Egoera</th>
                             <th>Ekintza</th>
                         </tr>
@@ -2392,7 +2928,7 @@
                     "Eginkizuna": registro.tarea || "",
                     "Mota": registro.tipo || "",
                     "Azpi-mota": registro.subtipo || "",
-                    "Ikaslearen ID": registro.estudiante_id || "",
+                    "Ikasle kopurua": registro.estudiante_id || "",
                     "Zehaztu": registro.zehaztu || "",
                     "Egiteko data": registro.fecha || "",
                     "Amaiera-data": registro.fecha_fin || "",
@@ -2473,7 +3009,7 @@
                     "Eginkizuna": registro.tarea || "",
                     "Mota": registro.tipo || "",
                     "Azpi-mota": registro.subtipo || "",
-                    "Ikaslearen ID": registro.estudiante_id || "",
+                    "Ikasle kopurua": registro.estudiante_id || "",
                     "Zehaztu": registro.zehaztu || "",
                     "Egiteko data": registro.fecha || "",
                     "Amaiera-data": registro.fecha_fin || "",

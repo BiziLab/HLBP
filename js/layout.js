@@ -221,6 +221,35 @@ window.HLBPLayout = {
                                 : ""
                         }
 
+
+                        <div class="nav-section-title">
+                            KONTUA
+                        </div>
+
+
+                        <!-- ==================================================
+                             NIRE PROFILA
+                             ================================================== -->
+
+                        <a
+                            href="profila.html"
+                            class="nav-item ${
+                                paginaActual === "profila"
+                                    ? "active"
+                                    : ""
+                            }"
+                        >
+
+                            <span class="nav-icon">
+                                ◍
+                            </span>
+
+                            <span class="nav-label">
+                                Nire profila
+                            </span>
+
+                        </a>
+
                     </nav>
 
 
@@ -523,6 +552,15 @@ window.HLBPLayout = {
         ) {
 
             return "administrazioa";
+
+        }
+
+
+        if (
+            pathname.includes("profila")
+        ) {
+
+            return "profila";
 
         }
 

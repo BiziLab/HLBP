@@ -211,7 +211,7 @@ async function cargarEstadisticas() {
 
             registrosQuery =
                 registrosQuery.eq(
-                    "usuario_id",
+                    "aholkulari_id",
                     HLBPSession.user.id
                 );
 
@@ -389,7 +389,8 @@ async function cargarUltimosRegistros() {
                     fecha,
                     tarea,
                     tipo,
-                    estado
+                    estado,
+                    aholkulari_id
                 `)
                 .order(
                     "fecha",
@@ -404,7 +405,7 @@ async function cargarUltimosRegistros() {
 
             query =
                 query.eq(
-                    "usuario_id",
+                    "aholkulari_id",
                     HLBPSession.user.id
                 );
 
@@ -438,14 +439,89 @@ async function cargarUltimosRegistros() {
         }
 
 
+        // ----------------------------------------------------
+        // Aholkulariaren datuak (izena, berritzegunea...)
+        // ----------------------------------------------------
+
+        let perfilesMap = new Map();
+
+        if (global) {
+
+            const aholkulariIds = [
+                ...new Set(
+                    data
+                        .map(registro => registro.aholkulari_id)
+                        .filter(Boolean)
+                )
+            ];
+
+            if (aholkulariIds.length > 0) {
+
+                const {
+                    data: perfiles,
+                    error: perfilesError
+                } =
+                    await window.hlbpSupabase
+                        .from("profiles")
+                        .select(`
+                            id,
+                            nombre,
+                            apellidos,
+                            berritzegune,
+                            espezialitatea
+                        `)
+                        .in("id", aholkulariIds);
+
+                if (perfilesError) {
+                    throw perfilesError;
+                }
+
+                perfilesMap = new Map(
+                    (perfiles || []).map(
+                        perfil => [String(perfil.id), perfil]
+                    )
+                );
+
+            }
+
+        }
+
+
         container.innerHTML = `
 
             <div class="recent-records-list">
 
                 ${data.map(
-                    registro => `
+                    registro => {
 
-                    <div class="recent-record">
+                        const perfil =
+                            global
+                                ? perfilesMap.get(
+                                    String(registro.aholkulari_id)
+                                )
+                                : null;
+
+                        const nombreAholkularia =
+                            perfil
+                                ? `${perfil.nombre || ""} ${perfil.apellidos || ""}`.trim()
+                                : "";
+
+                        const jatorria =
+                            perfil
+                                ? (perfil.espezialitatea || perfil.berritzegune || "")
+                                : "";
+
+                        const clickable =
+                            global && registro.aholkulari_id;
+
+                        return `
+
+                    <div
+                        class="recent-record ${clickable ? "recent-record-clickable" : ""}"
+                        ${clickable
+                            ? `role="button" tabindex="0" data-persona-id="${escapeHtml(registro.aholkulari_id)}"`
+                            : ""}
+                    >
 
                         <div class="recent-record-main">
 
@@ -454,13 +530,19 @@ async function cargarUltimosRegistros() {
                                     registro.tarea ||
                                     "Erregistroa"
                                 )}
+                                ${nombreAholkularia
+                                    ? ` · ${escapeHtml(nombreAholkularia)}`
+                                    : ""}
                             </strong>
 
                             <span>
-                                ${escapeHtml(
-                                    registro.tipo ||
-                                    ""
-                                )}
+                                ${[
+                                    registro.tipo,
+                                    jatorria
+                                ]
+                                    .filter(Boolean)
+                                    .map(escapeHtml)
+                                    .join(" · ")}
                             </span>
 
                         </div>
@@ -485,12 +567,58 @@ async function cargarUltimosRegistros() {
 
                     </div>
 
-                `
+                `;
+                    }
                 ).join("")}
 
             </div>
 
         `;
+
+
+        if (global) {
+
+            const irAFicha = personaId => {
+
+                if (!personaId) {
+                    return;
+                }
+
+                window.location.href =
+                    `administrazioa.html?persona=${encodeURIComponent(personaId)}`;
+
+            };
+
+            container
+                .querySelectorAll("[data-persona-id]")
+                .forEach(elemento => {
+
+                    elemento.addEventListener(
+                        "click",
+                        () => irAFicha(elemento.dataset.personaId)
+                    );
+
+                    elemento.addEventListener(
+                        "keydown",
+                        event => {
+
+                            if (
+                                event.key === "Enter" ||
+                                event.key === " "
+                            ) {
+
+                                event.preventDefault();
+
+                                irAFicha(elemento.dataset.personaId);
+
+                            }
+
+                        }
+                    );
+
+                });
+
+        }
 
 
     } catch (error) {
