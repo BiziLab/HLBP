@@ -1,0 +1,59 @@
+/* ============================================================
+   HLBP - NIRE PROFILA
+   ============================================================ */
+
+.profila-panel + .profila-panel {
+    margin-top: 24px;
+}
+
+
+.profila-header {
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+
+    border-bottom: 1px solid #eeeef2;
+}
+
+
+.profila-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 52px;
+    height: 52px;
+
+    border-radius: 50%;
+
+    background: #eef0ff;
+
+    color: #4b4fd6;
+
+    font-size: 16px;
+    font-weight: 700;
+
+    flex-shrink: 0;
+}
+
+
+.profila-header-name {
+    display: block;
+
+    font-size: 15px;
+}
+
+
+.profila-header-role {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #8a8b93;
+
+    font-size: 12px;
+}

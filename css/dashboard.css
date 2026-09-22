@@ -292,6 +292,23 @@
 }
 
 
+.recent-record-clickable {
+    cursor: pointer;
+
+    border-radius: 8px;
+
+    transition: background-color 0.15s ease;
+}
+
+
+.recent-record-clickable:hover,
+.recent-record-clickable:focus-visible {
+    background-color: #f6f6fa;
+
+    outline: none;
+}
+
+
 .recent-record-main {
     min-width: 0;
 

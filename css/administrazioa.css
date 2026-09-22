@@ -540,6 +540,48 @@ select.admin-input {
     color: var(--adm-muted);
 }
 
+.admin-chip-editable {
+    min-height: 32px;
+    align-items: center;
+}
+
+.admin-chip-removable {
+    gap: 6px;
+    padding-right: 6px;
+}
+
+.admin-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.08);
+    color: inherit;
+    cursor: pointer;
+}
+
+.admin-chip-remove svg {
+    width: 9px;
+    height: 9px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.admin-chip-remove:hover {
+    background: rgba(0, 0, 0, 0.16);
+}
+
+.admin-form-inline-action {
+    margin-top: 10px;
+}
+
 .admin-muted {
     color: #9b95a3;
     font-size: 14px;
