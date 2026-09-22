@@ -30,13 +30,6 @@ async function iniciarZentroak() {
             return;
         }
 
-        // Solo ADMIN y MASTER
-        if (!window.HLBPSession.isAdminOrMaster()) {
-
-            window.location.href = "dashboard.html";
-            return;
-        }
-
         // Renderizar estructura general de la aplicación
         window.HLBPLayout.render();
 
@@ -100,9 +93,6 @@ async function cargarZentroak() {
 
         hlbpZentroak = centros || [];
 
-        hlbpZentroakFiltratuak =
-            [...hlbpZentroak];
-
 
         // Cargar relaciones Aholkularia - Centro
         let relaciones = [];
@@ -117,6 +107,34 @@ async function cargarZentroak() {
 
         if (!relacionesError) {
             relaciones = relacionesData || [];
+        }
+
+
+        /*
+         * Un AHL solo puede ver los centros que tiene
+         * asignados. No puede editar nada de esta pantalla:
+         * es una vista de solo lectura de "sus" centros.
+         */
+
+        if (!window.HLBPSession.isAdminOrMaster()) {
+
+            const userId =
+                String(window.HLBPSession.user.id);
+
+            const idsAsignados = new Set(
+                relaciones
+                    .filter(
+                        relacion =>
+                            String(relacion.aholkulari_id) === userId
+                    )
+                    .map(
+                        relacion => String(relacion.centro_id)
+                    )
+            );
+
+            hlbpZentroak = hlbpZentroak.filter(
+                centro => idsAsignados.has(String(centro.id))
+            );
         }
 
 
@@ -240,6 +258,16 @@ function renderZentroak() {
         ).length;
 
 
+    const esAdminOMaster =
+        window.HLBPSession.isAdminOrMaster();
+
+
+    const zentroakDeskribapena =
+        esAdminOMaster
+            ? "HLBP sisteman erregistratutako ikastetxe guztien katalogoa."
+            : "Zuri esleitutako ikastetxeen zerrenda.";
+
+
     pageContent.innerHTML = `
 
         <div class="zentroak-page">
@@ -267,8 +295,7 @@ function renderZentroak() {
                             </h1>
 
                             <p>
-                                HLBP sisteman erregistratutako
-                                ikastetxe guztien katalogoa.
+                                ${zentroakDeskribapena}
                             </p>
 
                         </div>
