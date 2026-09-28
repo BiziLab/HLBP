@@ -159,7 +159,7 @@ function renderErregistroa() {
                         </h2>
 
                         <p>
-                            Bete eremuak eta gorde jarduera PostgreSQL datu-basean.
+                            Bete eremuak eta gorde jarduera.
                         </p>
 
                     </div>
