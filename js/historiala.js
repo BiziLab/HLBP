@@ -837,6 +837,15 @@
 
         const cfgActual = EGINKIZUNAK[registro.tarea] || {};
 
+        const motaSalbuetsiaAzpiMota =
+            (AZPIMOTA_SALBUESPEN_MOTAK[registro.tarea] || []).includes(registro.tipo);
+
+        const motaFuerzaHnaNie =
+            (HNA_NIE_SALBUESPEN_MOTAK[registro.tarea] || []).includes(registro.tipo);
+
+        const ikasleKopuruaBista =
+            !motaFuerzaHnaNie && EGINKIZUNAK_IKASLE_KOPURUA.includes(registro.tarea);
+
         pageContent.innerHTML = `
 
             <div class="erregistroa-page">
@@ -929,7 +938,7 @@
                                 </div>
 
                                 <div
-                                    class="erregistroa-field erregistroa-dynamic ${cfgActual.azpiMotak ? "visible" : ""}"
+                                    class="erregistroa-field erregistroa-dynamic ${cfgActual.azpiMotak && !motaSalbuetsiaAzpiMota ? "visible" : ""}"
                                     id="histGrupoAzpiMota"
                                 >
                                     <label for="histEditAzpiMota">
@@ -957,15 +966,31 @@
                                     <textarea id="histEditZehaztu" placeholder="Zehaztu eginbeharrak...">${escapeHtml(registro.zehaztu || "")}</textarea>
                                 </div>
 
-                                <div class="erregistroa-field" id="histGrupoIkasleKopurua">
-                                    <label for="histEditIkasleKopurua" id="histLabelIkasleKopurua">
-                                        ${EGINKIZUNAK_IKASLE_KOPURUA.includes(registro.tarea) ? "Ikasle kopurua" : "Ikaslearen HNA/NIE"}
+                                <div
+                                    class="erregistroa-field erregistroa-dynamic ${cfgActual.maila ? "visible" : ""}"
+                                    id="histGrupoMaila"
+                                >
+                                    <label for="histEditMaila">
+                                        Maila
                                         <span class="erregistroa-required">*</span>
                                     </label>
                                     <input
-                                        type="${EGINKIZUNAK_IKASLE_KOPURUA.includes(registro.tarea) ? "number" : "text"}"
+                                        type="text"
+                                        id="histEditMaila"
+                                        placeholder="Adib: 3. DBH"
+                                        value="${escapeHtml(registro.maila || "")}"
+                                    >
+                                </div>
+
+                                <div class="erregistroa-field" id="histGrupoIkasleKopurua">
+                                    <label for="histEditIkasleKopurua" id="histLabelIkasleKopurua">
+                                        ${ikasleKopuruaBista ? "Ikasle kopurua" : "Ikaslearen HNA/NIE"}
+                                        <span class="erregistroa-required">*</span>
+                                    </label>
+                                    <input
+                                        type="${ikasleKopuruaBista ? "number" : "text"}"
                                         id="histEditIkasleKopurua"
-                                        ${EGINKIZUNAK_IKASLE_KOPURUA.includes(registro.tarea) ? 'min="0" step="1" inputmode="numeric"' : ""}
+                                        ${ikasleKopuruaBista ? 'min="0" step="1" inputmode="numeric"' : ""}
                                         value="${escapeHtml(registro.estudiante_id ?? "")}"
                                     >
                                 </div>
@@ -1051,11 +1076,12 @@
             const cfg = EGINKIZUNAK[tarea] || {};
 
             const grupoMota = $("histGrupoMota");
-            const grupoAzpiMota = $("histGrupoAzpiMota");
             const grupoZehaztu = $("histGrupoZehaztu");
+            const grupoMaila = $("histGrupoMaila");
             const motaSelect = $("histEditMota");
             const azpiMotaSelect = $("histEditAzpiMota");
             const zehaztuInput = $("histEditZehaztu");
+            const mailaInput = $("histEditMaila");
 
             if (cfg.motak && cfg.motak.length) {
 
@@ -1071,19 +1097,8 @@
                 grupoMota.classList.remove("visible");
             }
 
-            if (cfg.azpiMotak && cfg.azpiMotak.length) {
-
-                azpiMotaSelect.innerHTML = `<option value="">Aukeratu azpi-mota...</option>` +
-                    cfg.azpiMotak.map(azpiMota => `<option value="${escapeHtml(azpiMota)}">${escapeHtml(azpiMota)}</option>`).join("");
-
-                grupoAzpiMota.classList.add("visible");
-
-            } else {
-
-                azpiMotaSelect.innerHTML = `<option value="">Aukeratu azpi-mota...</option>`;
-
-                grupoAzpiMota.classList.remove("visible");
-            }
+            azpiMotaSelect.innerHTML = `<option value="">Aukeratu azpi-mota...</option>` +
+                (cfg.azpiMotak || []).map(azpiMota => `<option value="${escapeHtml(azpiMota)}">${escapeHtml(azpiMota)}</option>`).join("");
 
             if (cfg.zehaztu) {
 
@@ -1098,7 +1113,30 @@
                 }
             }
 
-            aplicarModoIkasleKopuruaHist(tarea);
+            if (cfg.maila) {
+
+                grupoMaila.classList.add("visible");
+
+            } else {
+
+                grupoMaila.classList.remove("visible");
+
+                if (mailaInput) {
+                    mailaInput.value = "";
+                }
+            }
+
+            // Mota zerrenda bar sortu berri da, mota hutsarekin ebaluatu
+            actualizarAzpiMotaEtaIkasleKopuruaHist(tarea, "");
+        });
+
+
+        $("histEditMota")?.addEventListener("change", () => {
+
+            const tarea = $("histEditTarea").value;
+            const mota = $("histEditMota").value;
+
+            actualizarAzpiMotaEtaIkasleKopuruaHist(tarea, mota);
         });
 
 
@@ -1111,7 +1149,34 @@
     }
 
 
-    function aplicarModoIkasleKopuruaHist(tarea) {
+    function actualizarAzpiMotaEtaIkasleKopuruaHist(tarea, mota) {
+
+        const cfg = EGINKIZUNAK[tarea] || {};
+
+        const grupoAzpiMota = $("histGrupoAzpiMota");
+        const azpiMotaSelect = $("histEditAzpiMota");
+
+        const motaSalbuetsia =
+            (AZPIMOTA_SALBUESPEN_MOTAK[tarea] || []).includes(mota);
+
+        if (cfg.azpiMotak && cfg.azpiMotak.length && !motaSalbuetsia) {
+
+            grupoAzpiMota.classList.add("visible");
+
+        } else {
+
+            grupoAzpiMota.classList.remove("visible");
+
+            if (azpiMotaSelect) {
+                azpiMotaSelect.value = "";
+            }
+        }
+
+        aplicarModoIkasleKopuruaHist(tarea, mota);
+    }
+
+
+    function aplicarModoIkasleKopuruaHist(tarea, mota) {
 
         const label = $("histLabelIkasleKopurua");
         const input = $("histEditIkasleKopurua");
@@ -1120,9 +1185,15 @@
             return;
         }
 
+        const motaFuerzaHnaNie =
+            (HNA_NIE_SALBUESPEN_MOTAK[tarea] || []).includes(mota);
+
         const eskatuKopurua =
-            tarea === "" ||
-            EGINKIZUNAK_IKASLE_KOPURUA.includes(tarea);
+            !motaFuerzaHnaNie &&
+            (
+                tarea === "" ||
+                EGINKIZUNAK_IKASLE_KOPURUA.includes(tarea)
+            );
 
         if (eskatuKopurua) {
 
@@ -1153,6 +1224,7 @@
         const mota = $("histEditMota")?.value || "";
         const azpiMota = $("histEditAzpiMota")?.value || "";
         const zehaztu = valorDe("histEditZehaztu");
+        const maila = valorDe("histEditMaila");
         const ikasleKopuruaRaw = valorDe("histEditIkasleKopurua");
         const fecha = $("histEditData")?.value || "";
         const fechaFin = $("histEditAmaieraData")?.value || "";
@@ -1178,7 +1250,10 @@
             return;
         }
 
-        if (cfg.azpiMotak && !azpiMota) {
+        const motaSalbuetsiaAzpiMota =
+            (AZPIMOTA_SALBUESPEN_MOTAK[tarea] || []).includes(mota);
+
+        if (cfg.azpiMotak && !motaSalbuetsiaAzpiMota && !azpiMota) {
             alertar("Azpi-mota aukeratu behar da.");
             return;
         }
@@ -1188,7 +1263,17 @@
             return;
         }
 
-        const eskatuIkasleKopurua = EGINKIZUNAK_IKASLE_KOPURUA.includes(tarea);
+        if (cfg.maila && !maila) {
+            alertar("\"Maila\" eremua bete behar da.");
+            return;
+        }
+
+        const motaFuerzaHnaNie =
+            (HNA_NIE_SALBUESPEN_MOTAK[tarea] || []).includes(mota);
+
+        const eskatuIkasleKopurua =
+            !motaFuerzaHnaNie &&
+            EGINKIZUNAK_IKASLE_KOPURUA.includes(tarea);
 
         if (ikasleKopuruaRaw === "") {
             alertar(
@@ -1248,6 +1333,7 @@
                         tipo: mota || null,
                         subtipo: azpiMota || null,
                         zehaztu: zehaztu || null,
+                        maila: maila || null,
                         estudiante_id: estudianteValue,
                         fecha,
                         fecha_fin: fechaFin || null,
