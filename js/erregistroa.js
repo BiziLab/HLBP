@@ -301,6 +301,25 @@ function renderErregistroa() {
 
 
                             <div
+                                class="erregistroa-field erregistroa-dynamic"
+                                id="grupoMaila"
+                            >
+
+                                <label for="registroMaila">
+                                    Maila
+                                    <span class="erregistroa-required">*</span>
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="registroMaila"
+                                    placeholder="Adib: 3. DBH"
+                                >
+
+                            </div>
+
+
+                            <div
                                 class="erregistroa-field erregistroa-dynamic erregistroa-dynamic-wide"
                                 id="grupoZehaztu"
                             >
@@ -740,6 +759,9 @@ function inicializarEventos() {
     const tareaSelect =
         document.getElementById("registroTarea");
 
+    const motaSelect =
+        document.getElementById("registroMota");
+
     const limpiarButton =
         document.getElementById("garbituButton");
 
@@ -765,6 +787,16 @@ function inicializarEventos() {
         tareaSelect.addEventListener(
             "change",
             updateEremuak
+        );
+
+    }
+
+
+    if (motaSelect) {
+
+        motaSelect.addEventListener(
+            "change",
+            onMotaChange
         );
 
     }
@@ -854,17 +886,17 @@ function updateEremuak() {
 
     /*
      * AZPI-MOTA
-     * (Protokoloak eginkizunean bakarrik agertzen da,
-     * hautatutako motatik independente).
+     * (Protokoloak eginkizunean agertzen da, KSHO mota izan
+     * ezik -- ikus actualizarAzpiMotaEtaIkasleKopurua).
      */
 
-    if (cfg.azpiMotak && cfg.azpiMotak.length) {
+    azpiMotaSelect.innerHTML = `
+        <option value="">
+            Aukeratu azpi-mota...
+        </option>
+    `;
 
-        azpiMotaSelect.innerHTML = `
-            <option value="">
-                Aukeratu azpi-mota...
-            </option>
-        `;
+    if (cfg.azpiMotak && cfg.azpiMotak.length) {
 
         cfg.azpiMotak.forEach(azpiMota => {
 
@@ -877,18 +909,6 @@ function updateEremuak() {
             azpiMotaSelect.appendChild(option);
 
         });
-
-        mostrarCampo(grupoAzpiMota);
-
-    } else {
-
-        azpiMotaSelect.innerHTML = `
-            <option value="">
-                Aukeratu azpi-mota...
-            </option>
-        `;
-
-        ocultarCampo(grupoAzpiMota);
 
     }
 
@@ -913,10 +933,96 @@ function updateEremuak() {
 
 
     /*
-     * IKASLE KOPURUA / IKASLEAREN HNA-NIE
+     * MAILA
+     * (Ebaluazio psikopedagogikoak eginkizunean bakarrik).
      */
 
-    aplicarModoIkasleKopurua(tarea);
+    const grupoMaila =
+        document.getElementById("grupoMaila");
+
+    const mailaInput =
+        document.getElementById("registroMaila");
+
+    if (cfg.maila) {
+
+        mostrarCampo(grupoMaila);
+
+    } else {
+
+        ocultarCampo(grupoMaila);
+
+        if (mailaInput) {
+            mailaInput.value = "";
+        }
+
+    }
+
+
+    /*
+     * AZPI-MOTA (ikusgarritasuna) / IKASLE KOPURUA-HNA-NIE
+     * Mota oraindik ez da hautatu (zerrenda bar sortu berri da),
+     * beraz mota hutsarekin ebaluatu.
+     */
+
+    actualizarAzpiMotaEtaIkasleKopurua(tarea, "");
+
+}
+
+
+/* ============================================================
+   AZPI-MOTA IKUSGARRITASUNA + IKASLE KOPURUA/HNA-NIE MODUA
+
+   Eginkizunaren ETA motaren arabera erabakitzen dira biak,
+   Protokoloak + KSHO salbuespena dela eta. Eginkizuna aldatzean
+   zein Mota aldatzean deitzen da.
+   ============================================================ */
+
+function actualizarAzpiMotaEtaIkasleKopurua(tarea, mota) {
+
+    const cfg =
+        EGINKIZUNAK[tarea] || {};
+
+    const grupoAzpiMota =
+        document.getElementById("grupoAzpiMota");
+
+    const azpiMotaSelect =
+        document.getElementById("registroAzpiMota");
+
+    const motaSalbuetsia =
+        (AZPIMOTA_SALBUESPEN_MOTAK[tarea] || []).includes(mota);
+
+    if (cfg.azpiMotak && cfg.azpiMotak.length && !motaSalbuetsia) {
+
+        mostrarCampo(grupoAzpiMota);
+
+    } else {
+
+        ocultarCampo(grupoAzpiMota);
+
+        if (azpiMotaSelect) {
+            azpiMotaSelect.value = "";
+        }
+
+    }
+
+    aplicarModoIkasleKopurua(tarea, mota);
+
+}
+
+
+/* ============================================================
+   CAMBIO DE MOTA
+   ============================================================ */
+
+function onMotaChange() {
+
+    const tarea =
+        document.getElementById("registroTarea").value;
+
+    const mota =
+        document.getElementById("registroMota").value;
+
+    actualizarAzpiMotaEtaIkasleKopurua(tarea, mota);
 
 }
 
@@ -928,7 +1034,7 @@ function updateEremuak() {
    edo "Ikaslearen HNA/NIE" (testua) eskatzen du.
    ============================================================ */
 
-function aplicarModoIkasleKopurua(tarea) {
+function aplicarModoIkasleKopurua(tarea, mota) {
 
     const label =
         document.getElementById("labelIkasleKopurua");
@@ -943,9 +1049,15 @@ function aplicarModoIkasleKopurua(tarea) {
         return;
     }
 
+    const motaFuerzaHnaNie =
+        (HNA_NIE_SALBUESPEN_MOTAK[tarea] || []).includes(mota);
+
     const eskatuKopurua =
-        tarea === "" ||
-        EGINKIZUNAK_IKASLE_KOPURUA.includes(tarea);
+        !motaFuerzaHnaNie &&
+        (
+            tarea === "" ||
+            EGINKIZUNAK_IKASLE_KOPURUA.includes(tarea)
+        );
 
     if (eskatuKopurua) {
 
@@ -1004,6 +1116,9 @@ async function guardarRegistro() {
 
     const zehaztu =
         document.getElementById("registroZehaztu").value.trim();
+
+    const maila =
+        document.getElementById("registroMaila").value.trim();
 
     const ikasleKopuruaRaw =
         document.getElementById("registroIkasleKopurua").value.trim();
@@ -1065,7 +1180,10 @@ async function guardarRegistro() {
     }
 
 
-    if (cfg.azpiMotak && !azpiMota) {
+    const motaSalbuetsiaAzpiMota =
+        (AZPIMOTA_SALBUESPEN_MOTAK[tarea] || []).includes(mota);
+
+    if (cfg.azpiMotak && !motaSalbuetsiaAzpiMota && !azpiMota) {
 
         mostrarAlerta(
             "error",
@@ -1089,7 +1207,23 @@ async function guardarRegistro() {
     }
 
 
+    if (cfg.maila && !maila) {
+
+        mostrarAlerta(
+            "error",
+            "\"Maila\" eremua bete behar da."
+        );
+
+        return;
+
+    }
+
+
+    const motaFuerzaHnaNie =
+        (HNA_NIE_SALBUESPEN_MOTAK[tarea] || []).includes(mota);
+
     const eskatuIkasleKopurua =
+        !motaFuerzaHnaNie &&
         EGINKIZUNAK_IKASLE_KOPURUA.includes(tarea);
 
 
@@ -1187,6 +1321,8 @@ async function guardarRegistro() {
          * tipo        (= Mota)
          * subtipo     (= Azpi-mota)
          * zehaztu
+         * maila       (Ebaluazio psikopedagogikoak eginkizunean
+         *               bakarrik erabiltzen da)
          * estudiante_id  (= Ikasle kopurua zenbakia, edo
          *                  Ikaslearen HNA/NIE testua, eginkizunaren
          *                  arabera)
@@ -1215,6 +1351,9 @@ async function guardarRegistro() {
 
             zehaztu:
                 zehaztu || null,
+
+            maila:
+                maila || null,
 
             estudiante_id:
                 estudianteValue,
@@ -1322,6 +1461,9 @@ function limpiarRegistro(mostrarMensaje = true) {
     const zehaztu =
         document.getElementById("registroZehaztu");
 
+    const maila =
+        document.getElementById("registroMaila");
+
     const ikasleKopurua =
         document.getElementById("registroIkasleKopurua");
 
@@ -1364,6 +1506,11 @@ function limpiarRegistro(mostrarMensaje = true) {
 
     if (zehaztu) {
         zehaztu.value = "";
+    }
+
+
+    if (maila) {
+        maila.value = "";
     }
 
 
@@ -1416,7 +1563,11 @@ function limpiarRegistro(mostrarMensaje = true) {
         document.getElementById("grupoZehaztu")
     );
 
-    aplicarModoIkasleKopurua("");
+    ocultarCampo(
+        document.getElementById("grupoMaila")
+    );
+
+    actualizarAzpiMotaEtaIkasleKopurua("", "");
 
 
     if (mostrarMensaje) {
