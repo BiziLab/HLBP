@@ -22,9 +22,11 @@ const EGINKIZUNAK = {
             "Berria",
             "100.2A",
             "105 adimen kognitiboa",
-            "6. mailako birrebaluazioa",
+            "Birbalorazioa",
             "Besteak"
-        ]
+        ],
+
+        maila: true
 
     },
 
@@ -143,3 +145,23 @@ const EGINKIZUNAK_IKASLE_KOPURUA = [
     "Protokoloak",
     "CNE-en kudeaketa"
 ];
+
+
+/* ============================================================
+   MOTAREN ARABERAKO SALBUESPENAK (Protokoloak + KSHO)
+
+   KSHO mota hautatzen denean Protokoloak eginkizunean:
+     - Azpi-mota eremua ez da agertu behar (Protokoloaken
+       gainerako motetan bai).
+     - "Ikasle kopurua" beharrean "Ikaslearen HNA/NIE"
+       eskatu behar da (Protokoloaken gainerako motetan
+       "Ikasle kopurua" jarraitzen du agertzen).
+   ============================================================ */
+
+const AZPIMOTA_SALBUESPEN_MOTAK = {
+    "Protokoloak": ["KSHO"]
+};
+
+const HNA_NIE_SALBUESPEN_MOTAK = {
+    "Protokoloak": ["KSHO"]
+};
