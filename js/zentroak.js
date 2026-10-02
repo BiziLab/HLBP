@@ -468,13 +468,13 @@ function renderZentroak() {
                     <div class="zentroak-filter-group">
 
                         <label for="zentroakBerritzegune">
-                            Berritzegunea
+                            Bizilabeko Ubikazioa
                         </label>
 
                         <select id="zentroakBerritzegune">
 
                             <option value="">
-                                Berritzegune guztiak
+                                Bizilabeko Ubikazio guztiak
                             </option>
 
                         </select>
@@ -553,7 +553,7 @@ function renderZentroak() {
                                 </th>
 
                                 <th>
-                                    Berritzegunea
+                                    Bizilabeko Ubikazioa
                                 </th>
 
                                 <th>
@@ -1232,7 +1232,7 @@ function mostrarFormularioZentroa(centroExistente) {
                         </div>
 
                         <div class="admin-form-group">
-                            <label for="zentroaBerritzegune">Berritzegunea</label>
+                            <label for="zentroaBerritzegune">Bizilabeko Ubikazioa</label>
                             <input
                                 type="text"
                                 id="zentroaBerritzegune"
