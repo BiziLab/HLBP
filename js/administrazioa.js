@@ -2413,7 +2413,19 @@
         pintarChipsCentros();
 
 
-        $("btnAnadirCentros")?.addEventListener("click", () => {
+        // ------------------------------------------------------
+        // "Zentroak gehitu" eremuan idatzitako kodeak
+        // "seleccionados" multzora pasatzen ditu.
+        //
+        // Botoiak berak deitzen dio, baina baita formularioa
+        // bidali aurretik ere (ikus "editarPersonaForm" submit
+        // entzulea): horrela, erabiltzaileak kodeak idatzi eta
+        // "Zerrendara gehitu" sakatu gabe zuzenean "Aldaketak
+        // gorde" sakatzen badu ere, idatzitako zentroak ez dira
+        // isilean galtzen.
+        // ------------------------------------------------------
+
+        function agregarCentrosDesdeInput() {
 
             const errorContenedor = $("editarCentrosError");
 
@@ -2456,7 +2468,10 @@
                 errorContenedor.textContent =
                     `Ez dira aurkitu kode hauek: ${noEncontrados.join(", ")}`;
             }
-        });
+        }
+
+
+        $("btnAnadirCentros")?.addEventListener("click", agregarCentrosDesdeInput);
 
 
         $("btnCancelarEdicion")?.addEventListener("click", () => {
@@ -2471,6 +2486,11 @@
         $("editarPersonaForm")?.addEventListener("submit", async event => {
 
             event.preventDefault();
+
+            // "Zentroak gehitu" eremuan kode-zerrenda idatzita
+            // badago oraindik "Zerrendara gehitu" sakatu gabe,
+            // gorde aurretik zerrendara pasatu.
+            agregarCentrosDesdeInput();
 
             await guardarEdicionPersona(
                 persona,
